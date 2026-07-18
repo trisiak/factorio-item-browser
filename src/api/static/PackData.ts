@@ -16,6 +16,12 @@ import {
 import { FactorioLabData, FactorioLabIcon, FactorioLabItem, FactorioLabRecipe, toNumber } from "./factoriolab";
 import { PackDefinition } from "./packs";
 
+export type ResolvedIcon = {
+    icon: FactorioLabIcon;
+    /** Overlay text FactorioLab renders on top of a shared icon (e.g. steam temperatures). */
+    text?: string;
+};
+
 /**
  * A loaded pack: FactorioLab data indexed and mapped into the transfer.ts shapes the
  * stores expect. All answers are computed in memory — the dataset of even the largest
@@ -35,6 +41,7 @@ export class PackData {
     private readonly recipeIdsByIngredient = new Map<string, string[]>();
     private readonly recipeIdsByProduct = new Map<string, string[]>();
     private readonly iconsById = new Map<string, FactorioLabIcon>();
+    private readonly listableItems: FactorioLabItem[];
 
     public constructor(definition: PackDefinition, data: FactorioLabData) {
         this.definition = definition;
@@ -59,6 +66,18 @@ export class PackData {
         for (const icon of data.icons || []) {
             this.iconsById.set(icon.id, icon);
         }
+
+        // The browsable subset: mod-internal dummy items (e.g. SE's cargo-rocket pseudo
+        // ingredients) and items appearing in no recipe at all (calculator artifacts like
+        // steam-temperature variants) stay resolvable by URL/reference, but are hidden
+        // from the item list, search and random picks. See docs/static-fork.md.
+        this.listableItems = this.items.filter(
+            (item) =>
+                !item.id.includes("-dummy-") &&
+                (item.machine !== undefined ||
+                    this.recipeIdsByIngredient.has(item.id) ||
+                    this.recipeIdsByProduct.has(item.id)),
+        );
     }
 
     private push(map: Map<string, string[]>, key: string, value: string): void {
@@ -151,7 +170,7 @@ export class PackData {
     }
 
     public getItemList(page: number): ItemListData {
-        const metas: ItemMetaData[] = this.items.map((item) => ({
+        const metas: ItemMetaData[] = this.listableItems.map((item) => ({
             type: this.typeOfItem(item),
             name: item.id,
         }));
@@ -241,7 +260,7 @@ export class PackData {
     }
 
     public getRandomEntities(count: number): EntityData[] {
-        const shuffled = [...this.items];
+        const shuffled = [...this.listableItems];
         for (let i = shuffled.length - 1; i > 0; --i) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -253,7 +272,7 @@ export class PackData {
         const needle = query.trim().toLowerCase();
         const scored: { item: FactorioLabItem; score: number }[] = [];
         if (needle !== "") {
-            for (const item of this.items) {
+            for (const item of this.listableItems) {
                 const label = item.name.toLowerCase();
                 if (label.startsWith(needle) || item.id.startsWith(needle)) {
                     scored.push({ item, score: 0 });
@@ -264,7 +283,20 @@ export class PackData {
             scored.sort((left, right) => left.score - right.score || left.item.name.localeCompare(right.item.name));
         }
 
-        const entities = scored.map(({ item }) => this.buildItemEntity(item));
+        // Distinct entities can share a display name (e.g. SE's grounded/spaced variants);
+        // disambiguate those results with the raw id so they are tellable apart.
+        const labelCounts = new Map<string, number>();
+        for (const { item } of scored) {
+            labelCounts.set(item.name, (labelCounts.get(item.name) || 0) + 1);
+        }
+
+        const entities = scored.map(({ item }) => {
+            const entity = this.buildItemEntity(item);
+            if ((labelCounts.get(item.name) || 0) > 1) {
+                entity.label = `${item.name} (${item.id})`;
+            }
+            return entity;
+        });
         return {
             query: query,
             ...this.paginate(entities, page, Config.numberOfSearchResultsPerPage),
@@ -272,17 +304,18 @@ export class PackData {
     }
 
     /**
-     * Resolves the spritesheet position of an entity's icon, or null if the entity (or its
-     * icon) is unknown. Items, fluids and machines share the item namespace; recipes may
-     * point at another icon via their icon field (as items may, too).
+     * Resolves the spritesheet position of an entity's icon (plus its overlay text, e.g.
+     * steam temperatures), or null if the entity (or its icon) is unknown. Items, fluids
+     * and machines share the item namespace; recipes may point at another icon via their
+     * icon field (as items may, too).
      */
-    public getIconRect(type: string, name: string): FactorioLabIcon | null {
+    public getIconRect(type: string, name: string): ResolvedIcon | null {
         if (type === "recipe") {
             const recipe = this.recipesById.get(name);
             if (recipe) {
                 const icon = this.iconsById.get(recipe.icon ?? recipe.id);
                 if (icon) {
-                    return icon;
+                    return { icon, text: recipe.iconText };
                 }
                 // No own icon entry: fall back to the recipe's primary product.
                 const primaryProduct = Object.keys(recipe.out || {})[0];
@@ -297,7 +330,8 @@ export class PackData {
         if (!item) {
             return null;
         }
-        return this.iconsById.get(item.icon ?? item.id) ?? null;
+        const icon = this.iconsById.get(item.icon ?? item.id);
+        return icon ? { icon, text: item.iconText } : null;
     }
 
     public getMods(): ModData[] {

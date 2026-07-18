@@ -15,7 +15,11 @@ const fixture: FactorioLabData = {
     items: [
         { id: "widget", name: "Widget", category: "parts", row: 0, stack: 50 },
         { id: "gizmo", name: "Gizmo", category: "parts", row: 0, stack: 50 },
-        { id: "goo", name: "Goo", category: "fluids", row: 1 },
+        { id: "goo", name: "Goo", category: "fluids", row: 1, iconText: "42" },
+        { id: "thing-dummy-item", name: "Thing (Hidden)", category: "parts", row: 0 },
+        { id: "residue", name: "Residue", category: "parts", row: 0 },
+        { id: "doubler-a", name: "Doubler", category: "parts", row: 0 },
+        { id: "doubler-b", name: "Doubler", category: "parts", row: 0 },
         {
             id: "assembler",
             name: "Assembler",
@@ -40,8 +44,18 @@ const fixture: FactorioLabData = {
             row: 0,
             time: "3/2",
             producers: ["assembler"],
-            in: { widget: 2, goo: "5/2" },
+            in: { "widget": 2, "goo": "5/2", "thing-dummy-item": 1 },
             out: { gizmo: 1 },
+        },
+        {
+            id: "doubler-recipe",
+            name: "Doubler",
+            category: "parts",
+            row: 0,
+            time: 1,
+            producers: ["assembler"],
+            in: { widget: 1 },
+            out: { "doubler-a": 1, "doubler-b": 1 },
         },
         {
             id: "widget-tech-recipe",
@@ -105,21 +119,49 @@ describe("StaticPortalApi", (): void => {
         expect(initData.sidebarEntities).toEqual([]);
     });
 
-    test("getItemList excludes technologies and types fluids", async (): Promise<void> => {
+    test("getItemList excludes technologies, dummies and orphans, and types fluids", async (): Promise<void> => {
         const itemList = await api.getItemList(1);
 
-        expect(itemList.numberOfResults).toBe(4);
+        expect(itemList.numberOfResults).toBe(6);
         expect(itemList.results).toContainEqual({ type: "item", name: "widget" });
         expect(itemList.results).toContainEqual({ type: "fluid", name: "goo" });
-        expect(itemList.results.map((item) => item.name)).not.toContain("widget-tech");
+        // The machine is listable even though no bundled recipe crafts it.
+        expect(itemList.results).toContainEqual({ type: "item", name: "assembler" });
+        const names = itemList.results.map((item) => item.name);
+        expect(names).not.toContain("widget-tech");
+        expect(names).not.toContain("thing-dummy-item");
+        expect(names).not.toContain("residue");
+    });
+
+    test("dummy and orphaned items stay resolvable by direct reference", async (): Promise<void> => {
+        const dummy = await api.getTooltip("item", "thing-dummy-item");
+        expect(dummy.label).toBe("Thing (Hidden)");
+
+        const orphan = await api.getTooltip("item", "residue");
+        expect(orphan.label).toBe("Residue");
+        expect(orphan.numberOfRecipes).toBe(0);
+    });
+
+    test("search disambiguates duplicated display names", async (): Promise<void> => {
+        const results = await api.search("doubler", 1);
+
+        expect(results.results.map((entity) => entity.label).sort()).toEqual([
+            "Doubler (doubler-a)",
+            "Doubler (doubler-b)",
+        ]);
+    });
+
+    test("search excludes dummy and orphaned items", async (): Promise<void> => {
+        expect((await api.search("thing", 1)).numberOfResults).toBe(0);
+        expect((await api.search("residue", 1)).numberOfResults).toBe(0);
     });
 
     test("getItemIngredientRecipes maps recipes, fractions and labels", async (): Promise<void> => {
         const data = await api.getItemIngredientRecipes("item", "widget", 1);
 
         expect(data.label).toBe("Widget");
-        // The technology recipe consuming the widget is filtered out.
-        expect(data.numberOfResults).toBe(1);
+        // The technology recipe consuming the widget is filtered out; doubler-recipe stays.
+        expect(data.numberOfResults).toBe(2);
 
         const recipe = data.results[0];
         expect(recipe.type).toBe("recipe");
@@ -226,9 +268,11 @@ describe("StaticPortalApi", (): void => {
             '.icon-item-gizmo{background-image:url("https://factoriolab.github.io/data/2.0/icons.webp");' +
                 "background-size:306.25% 203.125%;background-position:50% 0%;}",
         );
-        // The fluid sits one row down: y = 66/(130-64)*100 = 100%.
+        // The fluid sits one row down: y = 66/(130-64)*100 = 100%, and carries its
+        // iconText overlay as an ::after rule.
         expect(result.style).toContain(".icon-fluid-goo{");
-        expect(result.style).toContain("background-position:0% 100%;}");
+        expect(result.style).toContain("background-position:0% 100%;position:relative;}");
+        expect(result.style).toContain('.icon-fluid-goo::after{content:"42";');
         // The recipe has no own icon entry and falls back to the item icon of the same name...
         expect(result.style).toContain(".icon-recipe-gizmo-recipe{");
         expect(result.style).not.toContain("unknown-thing");

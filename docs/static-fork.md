@@ -141,25 +141,30 @@ proposed mitigations:
 1. **2 dummy pseudo-items** — `se-rocket-launch-pad-silo-dummy-{ingredient,result}-item`
    ("Cargo rocket (Hidden Ingredient/Result)"). SE's own internal items for
    the cargo-rocket mechanic; they clutter list and search.
-   - [ ] Mitigation (trivial): filter items whose id contains `-dummy-` out
-     of the item list and search (keep them resolvable as recipe
-     ingredients, where they legitimately appear).
+   - [x] Mitigation: items whose id contains `-dummy-` are excluded from
+     the item list, search and random picks (still resolvable as recipe
+     ingredients and by URL).
 2. **2 duplicated display names** — "Cargo rocket silo" and "Energy beam
    injector" each exist twice as genuinely distinct entities (delivery
    variants). Indistinguishable in search results.
-   - [ ] Mitigation (small): append a disambiguator (the raw id) in search
-     results when two results share a label.
+   - [x] Mitigation: search results sharing a label get the raw id
+     appended ("Cargo rocket silo (se-rocket-launch-pad)").
 3. **28 orphaned items** — appear in no recipe at all; nearly all are
    `se-decompressing-steam-<temp>` temperature variants (FactorioLab models
    steam temperatures as separate items). Their item pages show
    "Ingredient in 0 recipes / Result of 0 recipes".
-   - [ ] Mitigation (small, needs care): hide recipe-less items from the
-     item list and search; keep their pages reachable by URL.
+   - [x] Mitigation: recipe-less items are hidden from the list, search
+     and random picks — except machines, which stay listable even when no
+     bundled recipe crafts them (this keeps SE's grounded/spaced building
+     variants visible). Pages remain reachable by URL. sxp: 899 → 889
+     listed (2 dummies + 8 orphaned steam variants).
 4. **16 items rely on `iconText`** — the icon-overlay text (steam
    temperature numbers) that FactorioLab renders on top of a shared icon. We
    ignore `iconText`, so all steam variants currently show an identical icon.
-   - [ ] Mitigation (medium): emit an `::after { content: "<text>" }` rule in
-     the generated icon CSS to reproduce the overlay.
+   - [x] Mitigation: the generated icon CSS emits an `::after` overlay rule
+     with the iconText (white, dark-outlined, bottom-right), so steam
+     variants are visually distinguishable — verified on sxp's internal
+     turbine steam icons.
 5. **20 items in category `other`** — SE's grounded/spaced building variants
    (`se-*-grounded`, `se-fuel-refinery-spaced`, …). Real entities, slightly
    noisy in the list. No action planned.

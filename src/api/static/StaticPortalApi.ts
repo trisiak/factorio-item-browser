@@ -20,7 +20,7 @@ import {
     SettingOptionsData,
     SidebarEntityData,
 } from "../transfer";
-import { PackData } from "./PackData";
+import { PackData, ResolvedIcon } from "./PackData";
 import { FactorioLabData } from "./factoriolab";
 import { defaultPack, findPackByCombinationId, PackDefinition, packs } from "./packs";
 
@@ -278,8 +278,7 @@ export class StaticPortalApi implements PortalApi {
         type: string,
         name: string,
         sheet: IconSheet,
-        x: number,
-        y: number,
+        icon: ResolvedIcon,
     ): string {
         const selector = cssSelector
             .replaceAll("{type}", type.replaceAll(" ", "_"))
@@ -287,16 +286,30 @@ export class StaticPortalApi implements PortalApi {
 
         const sizeX = (sheet.width / ICON_CELL_SIZE) * 100;
         const sizeY = (sheet.height / ICON_CELL_SIZE) * 100;
-        const positionX = sheet.width > ICON_CELL_SIZE ? (x / (sheet.width - ICON_CELL_SIZE)) * 100 : 0;
-        const positionY = sheet.height > ICON_CELL_SIZE ? (y / (sheet.height - ICON_CELL_SIZE)) * 100 : 0;
+        const positionX = sheet.width > ICON_CELL_SIZE ? (icon.icon.x / (sheet.width - ICON_CELL_SIZE)) * 100 : 0;
+        const positionY = sheet.height > ICON_CELL_SIZE ? (icon.icon.y / (sheet.height - ICON_CELL_SIZE)) * 100 : 0;
 
-        return (
+        let rule =
             `${selector}{` +
             `background-image:url("${sheet.url}");` +
             `background-size:${sizeX}% ${sizeY}%;` +
             `background-position:${positionX}% ${positionY}%;` +
-            `}`
-        );
+            (icon.text ? "position:relative;" : "") +
+            `}`;
+
+        if (icon.text) {
+            // Reproduce FactorioLab's icon overlay text (e.g. steam temperatures), which
+            // distinguishes variants that share the same base icon.
+            const text = icon.text.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+            rule +=
+                `\n${selector}::after{` +
+                `content:"${text}";` +
+                `position:absolute;right:1px;bottom:0;` +
+                `font-size:10px;font-weight:bold;line-height:1;color:#fff;` +
+                `text-shadow:0 0 2px #000,1px 1px 1px #000;pointer-events:none;` +
+                `}`;
+        }
+        return rule;
     }
 
     public async getIconsStyle(request: IconsStyleRequestData): Promise<IconsStyleData> {
@@ -311,7 +324,7 @@ export class StaticPortalApi implements PortalApi {
                 if (!icon) {
                     continue;
                 }
-                rules.push(this.buildIconRule(request.cssSelector, type, name, sheet, icon.x, icon.y));
+                rules.push(this.buildIconRule(request.cssSelector, type, name, sheet, icon));
                 (processedEntities[type] = processedEntities[type] || []).push(name);
             }
         }
