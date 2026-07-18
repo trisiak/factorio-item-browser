@@ -1,4 +1,4 @@
-import { faDiscord, IconDefinition } from "@fortawesome/free-brands-svg-icons";
+import { faGithub, IconDefinition } from "@fortawesome/free-brands-svg-icons";
 
 type FooterIcon = {
     name: string;
@@ -25,9 +25,9 @@ export const Config = {
 
     footerIcons: [
         {
-            name: "discord",
-            url: process.env.DISCORD_LINK || "",
-            icon: faDiscord,
+            name: "github",
+            url: "https://github.com/trisiak/factorio-item-browser",
+            icon: faGithub,
         },
     ] as FooterIcon[],
 };

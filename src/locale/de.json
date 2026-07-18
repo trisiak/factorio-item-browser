@@ -43,9 +43,11 @@
         }
     },
     "footer": {
+        "fork-disclaimer": "Ein unabhängiger Fork des originalen <1>Factorio Item Browser</1>.",
         "copyright-disclaimer": "Inhalte und Bilder sind Eigentum von <1>Wube Software</1> bzw. der <3>Mod-Authoren</3>.",
+        "data-disclaimer": "Item- und Rezeptdaten werden derzeit von <1>FactorioLab</1> bereitgestellt.",
         "external-link": {
-            "discord": "Verursacht die Seite Probleme oder hast du Feedback? Dann tritt dem Discord-Server bei!"
+            "github": "Den Quellcode dieses Forks auf GitHub ansehen."
         }
     },
     "header": {

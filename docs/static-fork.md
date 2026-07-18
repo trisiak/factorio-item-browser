@@ -50,6 +50,13 @@ should mirror this checklist and the two must stay reconciled.
   FactorioLab data (203 items, item/recipe pages render, no console
   errors). The false "does not support Factorio 2.x" banner was removed.
   Unit tests cover the mapping with a synthetic fixture.
+- [x] **Branding / attribution pass.** Footer states "independent fork of
+  the original Factorio Item Browser" (linked) and "data currently provided
+  by FactorioLab" (linked); the Discord footer icon became a GitHub link to
+  this fork; README carries the full fork/attribution disclaimer; the
+  original site's `og:url` and `opensearch.xml` were removed. Remaining
+  Discord references live only inside the settings pages that Phase 4
+  deletes.
 - [ ] **Phase 2 — icons.** `getIconsStyle` generates CSS locally from the
   pack's `icons` rects + `icons.webp` (64 px cells on a 66 px stride;
   `background-position` + `background-size` scaling). Keep `IconsStyleData`
@@ -64,8 +71,10 @@ should mirror this checklist and the two must stay reconciled.
   setting validation, and status polling (`GlobalSettingStatus`,
   `checkSettingStatus`); `sendSidebarEntities` persists to localStorage only.
 - [ ] **Phase 5 — static hosting + deploy.** SPA fallback for GitHub Pages
-  (404.html trick), drop `.htaccess` domain redirect, fix `index.ejs`
-  canonical/og URLs, CI deploy workflow.
+  (404.html trick), drop `.htaccess` domain redirect, CI deploy workflow.
+  Re-add an `og:url` meta and an `opensearch.xml` once the fork has a real
+  public URL (both were removed with the branding pass because they
+  hardcoded the original site's domain).
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

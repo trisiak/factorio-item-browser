@@ -92,7 +92,6 @@ module.exports = (env, argv) => {
                     { from: `${currentPath}/src/root/.htaccess` },
                     { from: `${currentPath}/src/root/favicon.ico` },
                     { from: `${currentPath}/src/root/manifest.webmanifest` },
-                    { from: `${currentPath}/src/root/opensearch.xml` },
                 ],
             }),
             new DefinePlugin(envVars),
