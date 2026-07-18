@@ -36,12 +36,23 @@ const KEY_SETTING_OPTIONS = "staticSettingOptions";
 
 type PersistedOptions = Partial<SettingOptionsData>;
 
+/** The icon cell size of FactorioLab spritesheets (66 px stride with a 2 px gutter). */
+const ICON_CELL_SIZE = 64;
+
+type IconSheet = {
+    url: string;
+    width: number;
+    height: number;
+};
+
 /** Pack data is cached per pack id across all api instances (including combination-bound ones). */
 const packDataCache = new Map<string, Promise<PackData>>();
+const iconSheetCache = new Map<string, Promise<IconSheet>>();
 
 /** Drops all cached pack data. Only needed by tests. */
 export function clearPackDataCache(): void {
     packDataCache.clear();
+    iconSheetCache.clear();
 }
 
 /**
@@ -268,11 +279,75 @@ export class StaticPortalApi implements PortalApi {
         return packData.getMods();
     }
 
+    private async loadIconSheet(pack: PackDefinition): Promise<IconSheet> {
+        let promise = iconSheetCache.get(pack.id);
+        if (!promise) {
+            const url = `${pack.source.baseUrl}/icons.webp`;
+            // The spritesheet dimensions are not part of data.json, so measure the image
+            // itself; the browser caches it, and the CSS below references the same URL.
+            promise = new Promise<IconSheet>((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
+                image.onerror = () =>
+                    reject(new ServiceNotAvailableError(`Failed to load the icons of pack "${pack.id}".`));
+                image.src = url;
+            });
+            iconSheetCache.set(pack.id, promise);
+            promise.catch(() => iconSheetCache.delete(pack.id));
+        }
+        return promise;
+    }
+
+    /**
+     * Builds one CSS rule placing the icon within the element via percentages, so the same
+     * rule works for any rendered icon size (the app uses 32 px and 64 px variants).
+     */
+    private buildIconRule(
+        cssSelector: string,
+        type: string,
+        name: string,
+        sheet: IconSheet,
+        x: number,
+        y: number,
+    ): string {
+        const selector = cssSelector
+            .replaceAll("{type}", type.replaceAll(" ", "_"))
+            .replaceAll("{name}", name.replaceAll(" ", "_"));
+
+        const sizeX = (sheet.width / ICON_CELL_SIZE) * 100;
+        const sizeY = (sheet.height / ICON_CELL_SIZE) * 100;
+        const positionX = sheet.width > ICON_CELL_SIZE ? (x / (sheet.width - ICON_CELL_SIZE)) * 100 : 0;
+        const positionY = sheet.height > ICON_CELL_SIZE ? (y / (sheet.height - ICON_CELL_SIZE)) * 100 : 0;
+
+        return (
+            `${selector}{` +
+            `background-image:url("${sheet.url}");` +
+            `background-size:${sizeX}% ${sizeY}%;` +
+            `background-position:${positionX}% ${positionY}%;` +
+            `}`
+        );
+    }
+
     public async getIconsStyle(request: IconsStyleRequestData): Promise<IconsStyleData> {
-        // Phase 2 (docs/static-fork.md) will generate CSS from the pack's spritesheet.
+        const pack = this.currentPack();
+        const [packData, sheet] = await Promise.all([this.loadPackData(pack), this.loadIconSheet(pack)]);
+
+        const processedEntities: { [type: string]: string[] } = {};
+        const rules: string[] = [];
+        for (const [type, names] of Object.entries(request.entities)) {
+            for (const name of names) {
+                const icon = packData.getIconRect(type, name);
+                if (!icon) {
+                    continue;
+                }
+                rules.push(this.buildIconRule(request.cssSelector, type, name, sheet, icon.x, icon.y));
+                (processedEntities[type] = processedEntities[type] || []).push(name);
+            }
+        }
+
         return {
-            processedEntities: {},
-            style: "",
+            processedEntities: processedEntities,
+            style: rules.join("\n"),
         };
     }
 

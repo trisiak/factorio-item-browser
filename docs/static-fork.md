@@ -57,10 +57,17 @@ should mirror this checklist and the two must stay reconciled.
   original site's `og:url` and `opensearch.xml` were removed. Remaining
   Discord references live only inside the settings pages that Phase 4
   deletes.
-- [ ] **Phase 2 — icons.** `getIconsStyle` generates CSS locally from the
-  pack's `icons` rects + `icons.webp` (64 px cells on a 66 px stride;
-  `background-position` + `background-size` scaling). Keep `IconsStyleData`
-  shape; `IconManager` stays untouched.
+- [x] **Phase 2 — icons.** `getIconsStyle` generates CSS locally from the
+  pack's `icons` rects + `icons.webp`: percentage-based `background-size` /
+  `background-position` rules (so the same rule serves the 32 px and 64 px
+  icon elements), sheet dimensions measured once via an `Image` load (they
+  are not in `data.json`). Icon resolution: item/fluid/machine → the item's
+  `icon ?? id`; recipe → `icon ?? id`, falling back to the primary product's
+  icon. `IconManager` and `IconsStyleData` untouched. Verified in Chromium:
+  item grid, recipe pages and machine cards all show real icons for both the
+  vanilla-2.0 and space-age packs; search and the long-form combination-id
+  redirect verified along the way. Mod icons (settings page) intentionally
+  resolve to nothing — that page dies in Phase 4.
 - [ ] **Phase 3 — search polish.** A basic prefix/substring item search
   shipped with Phase 1 (`PackData.search`). Remaining: evaluate result
   quality on the big packs (sxp) and improve ranking/matching only if it

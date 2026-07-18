@@ -55,8 +55,26 @@ const fixture: FactorioLabData = {
             flags: ["technology"],
         },
     ],
-    icons: [],
+    icons: [
+        { id: "widget", x: 0, y: 0 },
+        { id: "gizmo", x: 66, y: 0 },
+        { id: "goo", x: 0, y: 66 },
+        { id: "assembler", x: 132, y: 0 },
+    ],
 };
+
+// jsdom never loads images; fake a 196x130 sheet so the percentage math has exact values:
+// background-size x = 196/64*100 = 306.25%, gizmo position x = 66/(196-64)*100 = 50%.
+class FakeImage {
+    public naturalWidth = 196;
+    public naturalHeight = 130;
+    public onload: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+
+    public set src(value: string) {
+        setTimeout(() => this.onload && this.onload(), 0);
+    }
+}
 
 describe("StaticPortalApi", (): void => {
     let storageManager: StorageManager;
@@ -73,6 +91,7 @@ describe("StaticPortalApi", (): void => {
             status: 200,
             json: async () => fixture,
         }));
+        (window as unknown as { Image: unknown }).Image = FakeImage;
 
         api = new StaticPortalApi(storageManager);
     });
@@ -187,6 +206,36 @@ describe("StaticPortalApi", (): void => {
         await api.deleteSetting(packs[0].combinationId);
         const reset = await api.getSetting(packs[0].combinationId);
         expect(reset.name).toBe(packs[0].label);
+    });
+
+    test("getIconsStyle builds percentage rules and reports processed entities", async (): Promise<void> => {
+        const result = await api.getIconsStyle({
+            cssSelector: ".icon-{type}-{name}",
+            entities: {
+                item: ["gizmo", "unknown-thing"],
+                fluid: ["goo"],
+                recipe: ["gizmo-recipe"],
+                machine: ["assembler"],
+            },
+        });
+
+        expect(result.processedEntities).toEqual({
+            item: ["gizmo"],
+            fluid: ["goo"],
+            recipe: ["gizmo-recipe"],
+            machine: ["assembler"],
+        });
+
+        expect(result.style).toContain(
+            '.icon-item-gizmo{background-image:url("https://factoriolab.github.io/data/2.0/icons.webp");' +
+                "background-size:306.25% 203.125%;background-position:50% 0%;}",
+        );
+        // The fluid sits one row down: y = 66/(130-64)*100 = 100%.
+        expect(result.style).toContain(".icon-fluid-goo{");
+        expect(result.style).toContain("background-position:0% 100%;}");
+        // The recipe has no own icon entry and falls back to the item icon of the same name...
+        expect(result.style).toContain(".icon-recipe-gizmo-recipe{");
+        expect(result.style).not.toContain("unknown-thing");
     });
 
     test("getSettingMods returns the pack's mod versions", async (): Promise<void> => {

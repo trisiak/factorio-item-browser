@@ -13,7 +13,7 @@ import {
     ResultsData,
     SearchResultsData,
 } from "../transfer";
-import { FactorioLabData, FactorioLabItem, FactorioLabRecipe, toNumber } from "./factoriolab";
+import { FactorioLabData, FactorioLabIcon, FactorioLabItem, FactorioLabRecipe, toNumber } from "./factoriolab";
 import { PackDefinition } from "./packs";
 
 /**
@@ -34,6 +34,7 @@ export class PackData {
     private readonly recipesById = new Map<string, FactorioLabRecipe>();
     private readonly recipeIdsByIngredient = new Map<string, string[]>();
     private readonly recipeIdsByProduct = new Map<string, string[]>();
+    private readonly iconsById = new Map<string, FactorioLabIcon>();
 
     public constructor(definition: PackDefinition, data: FactorioLabData) {
         this.definition = definition;
@@ -53,6 +54,10 @@ export class PackData {
             for (const itemId of Object.keys(recipe.out || {})) {
                 this.push(this.recipeIdsByProduct, itemId, recipe.id);
             }
+        }
+
+        for (const icon of data.icons || []) {
+            this.iconsById.set(icon.id, icon);
         }
     }
 
@@ -264,6 +269,35 @@ export class PackData {
             query: query,
             ...this.paginate(entities, page, Config.numberOfSearchResultsPerPage),
         };
+    }
+
+    /**
+     * Resolves the spritesheet position of an entity's icon, or null if the entity (or its
+     * icon) is unknown. Items, fluids and machines share the item namespace; recipes may
+     * point at another icon via their icon field (as items may, too).
+     */
+    public getIconRect(type: string, name: string): FactorioLabIcon | null {
+        if (type === "recipe") {
+            const recipe = this.recipesById.get(name);
+            if (recipe) {
+                const icon = this.iconsById.get(recipe.icon ?? recipe.id);
+                if (icon) {
+                    return icon;
+                }
+                // No own icon entry: fall back to the recipe's primary product.
+                const primaryProduct = Object.keys(recipe.out || {})[0];
+                if (primaryProduct) {
+                    return this.getIconRect("item", primaryProduct);
+                }
+            }
+            // Fall through: some recipe names only exist as items in the icon set.
+        }
+
+        const item = this.itemsById.get(name);
+        if (!item) {
+            return null;
+        }
+        return this.iconsById.get(item.icon ?? item.id) ?? null;
     }
 
     public getMods(): ModData[] {
