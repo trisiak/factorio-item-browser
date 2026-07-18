@@ -3,6 +3,7 @@ import { CombinationId } from "../class/CombinationId";
 import { StorageManager, storageManager } from "../class/StorageManager";
 import { ClientFailureError, PageNotFoundError, ServerFailureError, ServiceNotAvailableError } from "../error/page";
 import { Config } from "../util/config";
+import { StaticPortalApi } from "./static/StaticPortalApi";
 import {
     EntityData,
     IconsStyleData,
@@ -28,9 +29,37 @@ type ServerError = {
 };
 
 /**
- * The class functioning as interface to the Portal API server.
+ * The contract of the Portal API: every data access of the stores and the icon manager
+ * funnels through these methods. The shapes are defined in transfer.ts and must not be
+ * changed — implementations map their data source into them.
  */
-export class PortalApi {
+export interface PortalApi {
+    withCombinationId(combinationId: CombinationId): PortalApi;
+    initializeSession(): Promise<InitData>;
+    getItemIngredientRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
+    getItemProductRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
+    getItemList(page: number): Promise<ItemListData>;
+    getRandom(): Promise<EntityData[]>;
+    getRecipeDetails(name: string): Promise<RecipeDetailsData>;
+    getRecipeMachines(name: string, page: number): Promise<RecipeMachinesData>;
+    search(query: string, page: number): Promise<SearchResultsData>;
+    getSettings(): Promise<SettingData[]>;
+    validateSetting(modNames: string[]): Promise<SettingValidationData>;
+    getSetting(combinationId: string): Promise<SettingData>;
+    saveSetting(combinationId: string, options: SettingOptionsData): Promise<void>;
+    deleteSetting(combinationId: string): Promise<void>;
+    getSettingMods(combinationId: string): Promise<ModData[]>;
+    getIconsStyle(request: IconsStyleRequestData): Promise<IconsStyleData>;
+    getTooltip(type: string, name: string): Promise<EntityData>;
+    sendSidebarEntities(sidebarEntities: SidebarEntityData[]): Promise<void>;
+}
+
+/**
+ * The implementation talking to the upstream Portal API server. Unused in the static
+ * fork (see docs/static-fork.md) but kept as the reference implementation of the
+ * contract until the conversion is complete.
+ */
+export class HttpPortalApi implements PortalApi {
     private readonly client: AxiosInstance;
     private readonly combinationId?: CombinationId;
     private readonly storageManager: StorageManager;
@@ -48,7 +77,7 @@ export class PortalApi {
     }
 
     public withCombinationId(combinationId: CombinationId): PortalApi {
-        return new PortalApi(this.storageManager, combinationId);
+        return new HttpPortalApi(this.storageManager, combinationId);
     }
 
     private prepareRequest(request: AxiosRequestConfig): AxiosRequestConfig {
@@ -266,4 +295,4 @@ export class PortalApi {
     }
 }
 
-export const portalApi = new PortalApi(storageManager);
+export const portalApi: PortalApi = new StaticPortalApi(storageManager);

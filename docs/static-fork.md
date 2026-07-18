@@ -39,19 +39,25 @@ should mirror this checklist and the two must stay reconciled.
   `node-sass` → Dart `sass`, dropped `image-webpack-loader`, webpack ^5.108
   (OpenSSL-3 md4 fix), `buffer` polyfill for `base-x`. CI (`ci.yaml`) runs
   jest/eslint/tsc/build on Node 22 with `--legacy-peer-deps`.
-- [ ] **Phase 1 — provider seam + pack manifest.** `StaticPortalApi` behind
-  the `portalApi` export; bundled manifest of FactorioLab packs ↔ synthetic
-  combination ids; per-pack `data.json` fetched once and cached in memory;
-  item list / item ingredient+product pages / recipe details+machines /
-  tooltips / random served from it. `initializeSession` synthesized from the
-  manifest + localStorage.
+- [x] **Phase 1 — provider seam + pack manifest.** `PortalApi` is now an
+  interface (the axios implementation lives on as `HttpPortalApi`, unused);
+  the `portalApi` singleton is a `StaticPortalApi` (`src/api/static/`)
+  answering from the bundled manifest (`packs.ts`: vanilla-2.0 / space-age /
+  space-exploration ↔ synthetic combination ids) and the pack's `data.json`,
+  fetched once and cached in memory. Item list, item ingredient/product
+  pages, recipe details+machines, tooltips, random, settings-read and a
+  basic substring `search()` all work; verified in Chromium against live
+  FactorioLab data (203 items, item/recipe pages render, no console
+  errors). The false "does not support Factorio 2.x" banner was removed.
+  Unit tests cover the mapping with a synthetic fixture.
 - [ ] **Phase 2 — icons.** `getIconsStyle` generates CSS locally from the
   pack's `icons` rects + `icons.webp` (64 px cells on a 66 px stride;
   `background-position` + `background-size` scaling). Keep `IconsStyleData`
   shape; `IconManager` stays untouched.
-- [ ] **Phase 3 — search.** Client-side substring/prefix search over pack
-  item/recipe names wired into `search()` (an index library only if plain
-  filtering proves too slow — packs are ≤ ~2k items).
+- [ ] **Phase 3 — search polish.** A basic prefix/substring item search
+  shipped with Phase 1 (`PackData.search`). Remaining: evaluate result
+  quality on the big packs (sxp) and improve ranking/matching only if it
+  falls short in practice.
 - [ ] **Phase 4 — settings → pack picker.** Replace the settings pages with a
   static pack picker; delete the savegame wizard (`SaveGameReader`,
   `SettingsNewStore`, `settingNew/` components, `fflate`/`byte-buffer` deps),

@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { CombinationId } from "../class/CombinationId";
 import { storageManager } from "../class/StorageManager";
-import { PortalApi } from "./PortalApi";
+import { HttpPortalApi } from "./PortalApi";
 import { SettingOptionsData, SidebarEntityData } from "./transfer";
 
 async function catchRequest<T>(responseData: T): Promise<AxiosRequestConfig> {
@@ -19,7 +19,7 @@ async function catchRequest<T>(responseData: T): Promise<AxiosRequestConfig> {
     });
 }
 
-describe("PortalApi", (): void => {
+describe("HttpPortalApi", (): void => {
     describe("endpoints", (): void => {
         const responseData = { foo: "bar" };
         const combinationId = "5e782820-364f-4f63-b227-ffcb3ce1d6fc";
@@ -40,7 +40,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.initializeSession();
 
             expect(result).toEqual(responseData);
@@ -70,7 +70,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getItemIngredientRecipes(type, name, page);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("ingredient-item-abc-4");
@@ -102,7 +102,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getItemProductRecipes(type, name, page);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("product-item-abc-4");
@@ -129,7 +129,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getItemList(page);
 
             expect(result).toEqual(responseData);
@@ -151,7 +151,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getRandom();
 
             expect(result).toEqual(responseData);
@@ -175,7 +175,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getRecipeDetails(name);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("recipe-abc");
@@ -206,7 +206,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getRecipeMachines(name, page);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("machine-abc-4");
@@ -238,7 +238,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.search(query, page);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("search-abc-4");
@@ -259,7 +259,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getSettings();
 
             expect(result).toEqual(responseData);
@@ -280,7 +280,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.validateSetting(modNames);
 
             expect(result).toEqual(responseData);
@@ -301,7 +301,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getSetting(settingCombinationId);
 
             expect(result).toEqual(responseData);
@@ -329,7 +329,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             await portalApi.saveSetting(settingCombinationId, options);
 
             return expect(requestPromise).resolves.toMatchObject(expectedRequest);
@@ -349,7 +349,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             await portalApi.deleteSetting(settingCombinationId);
 
             return expect(requestPromise).resolves.toMatchObject(expectedRequest);
@@ -373,7 +373,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getSettingMods(settingCombinationId);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith(cacheKey);
@@ -413,7 +413,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             await portalApi.sendSidebarEntities(sidebarEntities);
 
             return expect(requestPromise).resolves.toMatchObject(expectedRequest);
@@ -440,7 +440,7 @@ describe("PortalApi", (): void => {
             };
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getIconsStyle(request);
 
             expect(result).toEqual(responseData);
@@ -465,7 +465,7 @@ describe("PortalApi", (): void => {
             jest.spyOn(storageManager, "writeToCache");
 
             const requestPromise = catchRequest(responseData);
-            const portalApi = new PortalApi(storageManager);
+            const portalApi = new HttpPortalApi(storageManager);
             const result = await portalApi.getTooltip(type, name);
 
             expect(storageManager.readFromCache).toHaveBeenCalledWith("tooltip-item-abc");
