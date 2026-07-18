@@ -128,6 +128,48 @@ fbe fork's exact SE-on-2.0 mod list; technologies must be filtered; machine
 slot counts absent; amounts may be fractional strings (Rational) — normalize
 to numbers.
 
+## FactorioLab sxp (Space Exploration) quirk inventory
+
+Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp
+can be made comfortably usable *before* investing in the custom exporter. The
+good news: the data is structurally sound — every recipe ingredient/product id
+resolves to an item, every `producers` entry is a machine item, every recipe
+has producers, every item and recipe resolves to an icon, and no
+fractional-string amounts occur. The remaining quirks, with counts and
+proposed mitigations:
+
+1. **2 dummy pseudo-items** — `se-rocket-launch-pad-silo-dummy-{ingredient,result}-item`
+   ("Cargo rocket (Hidden Ingredient/Result)"). SE's own internal items for
+   the cargo-rocket mechanic; they clutter list and search.
+   - [ ] Mitigation (trivial): filter items whose id contains `-dummy-` out
+     of the item list and search (keep them resolvable as recipe
+     ingredients, where they legitimately appear).
+2. **2 duplicated display names** — "Cargo rocket silo" and "Energy beam
+   injector" each exist twice as genuinely distinct entities (delivery
+   variants). Indistinguishable in search results.
+   - [ ] Mitigation (small): append a disambiguator (the raw id) in search
+     results when two results share a label.
+3. **28 orphaned items** — appear in no recipe at all; nearly all are
+   `se-decompressing-steam-<temp>` temperature variants (FactorioLab models
+   steam temperatures as separate items). Their item pages show
+   "Ingredient in 0 recipes / Result of 0 recipes".
+   - [ ] Mitigation (small, needs care): hide recipe-less items from the
+     item list and search; keep their pages reachable by URL.
+4. **16 items rely on `iconText`** — the icon-overlay text (steam
+   temperature numbers) that FactorioLab renders on top of a shared icon. We
+   ignore `iconText`, so all steam variants currently show an identical icon.
+   - [ ] Mitigation (medium): emit an `::after { content: "<text>" }` rule in
+     the generated icon CSS to reproduce the overlay.
+5. **20 items in category `other`** — SE's grounded/spaced building variants
+   (`se-*-grounded`, `se-fuel-refinery-spaced`, …). Real entities, slightly
+   noisy in the list. No action planned.
+6. **Version basis mismatch** — FactorioLab's sxp is **Factorio 1.1.109 +
+   SE 0.6.138**, while the fbe fork's own SE pack is SE 0.7.56 on Factorio
+   2.0.76. Content differs accordingly (recipes, buildings, balancing).
+   Accepted until the own-pack adapter exists — this, not the cosmetic
+   quirks above, is the real reason the custom exporter will eventually be
+   worth it.
+
 ## Bigger picture
 
 The companion fork [`trisiak/factorio-blueprint-editor`](https://github.com/trisiak/factorio-blueprint-editor)
