@@ -1,0 +1,83 @@
+# CLAUDE.md
+
+Guidance for AI agents working in this repo. Optimized for getting useful work
+done quickly and safely; humans should also read `README.md`.
+
+## What this is
+
+A fork of
+[`factorio-item-browser/portal-frontend`](https://github.com/factorio-item-browser/portal-frontend)
+— the React 17 + TypeScript + MobX frontend of the Factorio Item Browser —
+being converted into a **fully static SPA** that reads fixed, pre-generated
+per-modpack data from remote URLs. No PHP backend, no database, no per-user
+mod-combination system. This fork is an independent line of development; don't
+open upstream PRs.
+
+**Read `docs/static-fork.md` before doing anything** — it is the durable
+design record, the phase tracker, and the spec for the data-source mapping.
+Keep its checkboxes up to date in the same change that lands work.
+
+## Hard constraints
+
+- **NEVER commit game-derived data or assets to this repo.** No item/recipe
+  dumps, no icons, no spritesheets, no locale dumps — nothing derived from
+  Factorio (Wube) or mod authors' assets. The repo is GPL-3.0-or-later and
+  the data is third-party IP; all pack data is fetched at runtime from
+  external URLs (currently FactorioLab's published packs).
+- **Do not change the `src/api/transfer.ts` type shapes.** The whole
+  conversion strategy is that stores/components stay interface-compatible
+  and are fed through the `portalApi` seam (`src/api/PortalApi.ts`).
+- Preserve the `portalApi` singleton export name and method signatures.
+
+## Architecture in one paragraph
+
+Every server interaction funnels through the 17 methods of `PortalApi`
+(`src/api/PortalApi.ts`), whose request/response shapes live in
+`src/api/transfer.ts`. Icons are CSS classes injected from a generated
+stylesheet (`src/class/IconManager.ts`). Every URL is prefixed with a
+"combination id" (`src/class/CombinationId.ts`); localStorage caching is
+scoped by it (`src/class/StorageManager.ts`). The static fork keeps all of
+that, mapping packs to **synthetic** combination ids via a bundled manifest,
+and satisfies the API from fetched pack data. `docs/static-fork.md` has the
+full method-by-method mapping.
+
+## Commands
+
+Node 22 (CI matches). Install needs the legacy peer flag — a plain
+`npm install` fails on react-sortablejs's react@16 peer pin:
+
+```bash
+npm install --legacy-peer-deps
+```
+
+| Task | Command |
+| --- | --- |
+| Dev server | `npm start` |
+| Production build | `npm run build` (reads `./.env`; `cp .env.development .env` first if absent) |
+| Full test suite | `npm test` (= tsc + jest + eslint) |
+| Type-check only | `npm run test-tsc` |
+| Unit tests only | `npm run test-jest` |
+| Lint only | `npm run test-eslint` (`npm run fix` to autofix) |
+
+Before declaring a change done, run `npm test` and `npm run build`.
+
+## Conventions
+
+- TypeScript + React function components + MobX stores (`src/store/`), one
+  module-level singleton per store; route registration happens in store
+  constructors, so import order matters.
+- Prettier + ESLint enforced (CI runs them); match existing style.
+- Routing is router5 (`src/class/Router.ts`); each logical route registers
+  short-id / missing-id / long-id variants — don't bypass that helper.
+
+## Working agreements
+
+- Commit and push only when asked; never open a PR unless explicitly
+  requested.
+- Keep `docs/static-fork.md` reconciled with the work in the same change.
+  GitHub Issues are currently disabled on this fork; if they get enabled,
+  mirror the doc's checklist into a tracking issue and cross-link.
+- The sibling fork `trisiak/factorio-blueprint-editor` (MIT, PixiJS editor)
+  publishes its own pack data on GitHub Pages and is the long-term shared
+  "data plane" (see the doc's Bigger picture section). Don't couple this app
+  to its internals — only to published URLs behind the data-source adapter.

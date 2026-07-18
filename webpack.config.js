@@ -45,6 +45,11 @@ module.exports = (env, argv) => {
         },
         resolve: {
             extensions: [".jpg", ".js", ".json", ".jsx", ".png", ".svg", ".ts", ".tsx"],
+            fallback: {
+                // base-x (via CombinationId) relies on the Node Buffer API; webpack 5 no longer
+                // ships node polyfills, so map it to the npm "buffer" package explicitly.
+                buffer: require.resolve("buffer/"),
+            },
         },
         module: {
             rules: [
@@ -69,14 +74,6 @@ module.exports = (env, argv) => {
                 {
                     test: /inline\/.*\.(png|svg|jpg|gif)$/,
                     type: "asset/inline",
-                    use: [
-                        {
-                            loader: "image-webpack-loader",
-                            options: {
-                                disable: !isProduction,
-                            },
-                        },
-                    ],
                 },
                 {
                     test: /\.(png|svg|jpg|gif)$/,
@@ -85,14 +82,6 @@ module.exports = (env, argv) => {
                     generator: {
                         filename: "asset/image/[name][ext]",
                     },
-                    use: [
-                        {
-                            loader: "image-webpack-loader",
-                            options: {
-                                disable: !isProduction,
-                            },
-                        },
-                    ],
                 },
             ],
         },

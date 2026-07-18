@@ -20,10 +20,10 @@ import SearchResultsPage from "./page/SearchResultsPage";
 import SettingsNewPage from "./page/SettingsNewPage";
 import SettingsPage from "./page/SettingsPage";
 import GlobalSettingStatus from "./status/GlobalSettingStatus";
+import Status from "./status/Status";
 import TemporarySettingStatus from "./status/TemporarySettingStatus";
 
 import "./App.scss";
-import Status from "./status/Status";
 
 const PAGE_BY_ROUTES: { [key: string]: ReactNode } = {
     [RouteName.Index]: <IndexPage />,
@@ -70,10 +70,9 @@ const App: FC = () => {
                 <Sidebar />
                 <div className="content">
                     <Status status={BoxStatus.Info}>
-                        <h3>This website does not support Factorio 2.x or the Space Age expansion.</h3>
-                        A new version of the Factorio Item Browser is already in development,
-                        but will take some more months to be finished.
-                        Please be patient, and enjoy the new Factorio and the Space Age expansion.
+                        <h3>This website does not support Factorio 2.x or the Space Age expansion.</h3>A new version of
+                        the Factorio Item Browser is already in development, but will take some more months to be
+                        finished. Please be patient, and enjoy the new Factorio and the Space Age expansion.
                     </Status>
                     {globalStore.isGlobalSettingStatusShown ? (
                         <>
