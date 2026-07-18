@@ -37,8 +37,6 @@ export class SettingsStore {
     public isChangingToSetting = false;
     /** Whether we are currently saving the changes. */
     public isSavingChanges = false;
-    /** Whether we are currently deleting a setting. */
-    public isDeletingSetting = false;
 
     public constructor(
         errorStore: ErrorStore,
@@ -57,13 +55,10 @@ export class SettingsStore {
             changeSelectedOptions: action,
             changeCombinationId: action,
             changeToSelectedSetting: action,
-            deleteSelectedSetting: action,
             handleInit: action,
             handleRouteChange: action,
             isChangeButtonVisible: computed,
             isChangingToSetting: observable,
-            isDeleteButtonVisible: computed,
-            isDeletingSetting: observable,
             isLoadingMods: observable,
             isSaveButtonVisible: computed,
             isSavingChanges: observable,
@@ -81,9 +76,6 @@ export class SettingsStore {
     private handleInit(initData: InitData): void {
         this.settings.set(initData.setting.combinationId, initData.setting);
         this.currentCombinationId = initData.setting.combinationId;
-        if (initData.lastUsedSetting) {
-            this.settings.set(initData.lastUsedSetting.combinationId, initData.lastUsedSetting);
-        }
     }
 
     private async handleRouteChange(): Promise<void> {
@@ -121,28 +113,11 @@ export class SettingsStore {
     }
 
     /**
-     * Whether the delete button must be visible.
-     */
-    public get isDeleteButtonVisible(): boolean {
-        return this.currentCombinationId !== this.selectedSetting.combinationId;
-    }
-
-    /**
-     * Whether the save setting button must be visible.
+     * Whether the save setting button must be visible. Only the locale is editable in the
+     * static fork — packs are fixed, names and recipe modes are not user choices.
      */
     public get isSaveButtonVisible(): boolean {
-        const setting = this.selectedSetting;
-
-        if (this.selectedOptions.name === "") {
-            return false;
-        }
-
-        return (
-            setting.isTemporary ||
-            setting.name !== this.selectedOptions.name ||
-            setting.locale !== this.selectedOptions.locale ||
-            setting.recipeMode !== this.selectedOptions.recipeMode
-        );
+        return this.selectedSetting.locale !== this.selectedOptions.locale;
     }
 
     /**
@@ -190,30 +165,10 @@ export class SettingsStore {
         }
     }
 
-    /**
-     * Deletes the currently selected setting.
-     */
-    public async deleteSelectedSetting(): Promise<void> {
-        this.isDeletingSetting = true;
-        try {
-            this.storageManager.clearCombination(CombinationId.fromFull(this.selectedCombinationId));
-            await this.portalApi.deleteSetting(this.selectedCombinationId);
-
-            runInAction(() => {
-                this.isDeletingSetting = false;
-                this.settings.delete(this.selectedCombinationId);
-                this.selectedCombinationId = this.currentCombinationId;
-                this.applySelectedSetting();
-            });
-        } catch (e) {
-            this.errorStore.handleError(e as PageError);
-        }
-    }
-
     private async applySelectedSetting() {
         const selectedSetting = this.selectedSetting;
 
-        this.selectedOptions.name = selectedSetting.isTemporary ? "" : selectedSetting.name;
+        this.selectedOptions.name = selectedSetting.name;
         this.selectedOptions.locale = selectedSetting.locale;
         this.selectedOptions.recipeMode = selectedSetting.recipeMode;
 

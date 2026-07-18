@@ -20,7 +20,7 @@ const ModList: FC = () => {
 
     return (
         <Section
-            headline={t(setting.isTemporary ? "settings.headline.mod-list-temporary" : "settings.headline.mod-list", {
+            headline={t("settings.headline.mod-list", {
                 count: mods.length,
                 name: getTranslatedSettingName(setting),
             })}

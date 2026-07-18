@@ -43,9 +43,11 @@
         }
     },
     "footer": {
+        "fork-disclaimer": "Ein unabhängiger Fork des originalen <1>Factorio Item Browser</1>.",
         "copyright-disclaimer": "Inhalte und Bilder sind Eigentum von <1>Wube Software</1> bzw. der <3>Mod-Authoren</3>.",
+        "data-disclaimer": "Item- und Rezeptdaten werden derzeit von <1>FactorioLab</1> bereitgestellt.",
         "external-link": {
-            "discord": "Verursacht die Seite Probleme oder hast du Feedback? Dann tritt dem Discord-Server bei!"
+            "github": "Den Quellcode dieses Forks auf GitHub ansehen."
         }
     },
     "header": {
@@ -118,139 +120,29 @@
         "temporary": "Temporär"
     },
     "settings": {
-        "add-temporary": "Temporäre Einstellung hinzufügen",
-        "adding-temporary": "Füge temporäre Einstellung hinzu...",
         "change-to-setting": "Zu \"{{name}}\" wechseln",
         "changing-to-setting": "Wechsle zu \"{{name}}\"...",
-        "combination-id": {
-            "label": "Kombinations-Id:",
-            "description": "Diese ID identifiziert die Kombination der Mods, die du verwendest. Wenn du auf ein Problem stößt, <1>trete dem Discord-Server bei</1> und gib diese ID in deiner Fehlerbeschreibung an."
-        },
         "current-setting": {
-            "add-new-setting": "Neue Einstellung hinzufügen",
-            "delete-setting": "Einstellung \"{{name}}\" entfernen",
-            "deleting-setting": "Einstellung \"{{name}}\" wird entfernt...",
             "label": "Aktuelle Einstellung:"
         },
         "headline": {
             "mod-list": "\"{{name}}\" verwendet {{count}} Mod",
             "mod-list_plural": "\"{{name}}\" verwendet {{count}} Mods",
-            "mod-list-temporary": "Temporäre Einstellung  verwendet {{count}} Mod",
-            "mod-list-temporary_plural": "Temporäre Einstellung verwendet {{count}} Mods",
             "options": "Optionen für \"{{name}}\"",
-            "options-temporary": "Optionen für temporäre Einstellung",
             "settings": "Einstellungen"
         },
         "locale": {
             "label": "Sprache:",
-            "description": "Die Übersetzungen von Items, Rezepten usw. werden von den Mods selbst bereitgestellt. Fehlende Übersetzungen werden mit Englisch ersetzt, so wie es auch im Spiel passiert."
+            "description": "Ändert die Sprache der Benutzeroberfläche. Item- und Rezeptnamen sind derzeit nur auf Englisch verfügbar."
         },
         "mod-list": {
             "author": "Author:",
             "name": "Name:",
             "version": "Version:"
         },
-        "name": {
-            "label": "Name:"
-        },
-        "recipe-mode": {
-            "label": "Rezept-Modus:",
-            "description": "Der Rezept-Modus legt fest, wie Rezepte behandelt werden, die sowohl eine normale als auch eine teure Variante besitzen. Wähle \"Normaler Modus\" oder \"Teurer Modus\", um nur diese Variante anzuzeigen, oder den \"Hybrid-Modus\", um beide Varianten anzuzeigen und die teure hervorheben zu lassen.",
-            "option": {
-                "hybrid": "Hybrid-Modus",
-                "normal": "Normaler Modus",
-                "expensive": "Teurer Modus"
-            }
-        },
-        "save-and-change": "Optionen speichern und zu \"{{name}}\" wechseln",
         "save-options": "Optionen speichern",
         "saving-options": "Speichere Optionen...",
-        "saving-and-changing": "Speichere Optionen und wechsle zu \"{{name}}\"...",
         "title": "Einstellungen - Factorio Item Browser"
-    },
-    "settings-new": {
-        "add-new-setting": "Neue Einstellung hinzufügen",
-        "cancel": "Abbrechen",
-        "change-to-setting": "Zu \"{{name}}\" wechseln",
-        "changing-to-setting": "Wechsle zu \"{{name}}\"...",
-        "discord": {
-            "label": "Tritt dem Discord-Server bei, wenn du Hilfe benötigst.",
-            "description": "Sollte dein Spielstand nicht funktionieren, oder solltest du auf ein anderes Problem mit deiner Kombination von Mods stoßen, dann tritt dem Discord-Server bei und frage nach Unterstützung."
-        },
-        "existing-setting": {
-            "headline": "Du hast bereits eine Einstellung mit diesen Mods.",
-            "description": "Es ist nicht möglich, mehrere Einstellungen mit denselben Mods zu haben. Bitte nutze stattdessen die vorhandene Einstellung."
-        },
-        "explanation": {
-            "description-1": "Um eine neue Einstellung hinzuzufügen, musst du deine Spielstand-Datei auswählen. Diese Datei enthält eine Liste an Mods, die du aktuell verwendest. Falls die Daten zu diesen Mods noch nicht verfügbar sein sollten, wird der Factorio Item Browser diese voll automatisch aus dem Spiel exportieren und zur Webseite hinzufügen. Dieser Prozess benötigt durchschnittlich 15 Minuten, kann allerdings abhängig von der Serverlast auch länger dauern.",
-            "description-2": "In einer Standardinstallation findest du deine Spielstände an folgendem Ort:",
-            "description-3": "Bitte denke daran, dass sowohl Factorio als auch alle verwendeten Mods aktuell sein müssen. Wenn dies nicht der Fall ist, kann der Datenexport ungenau werden oder sogar fehlschlagen. Außerdem müssen alle verwendeten Mods auf dem <1>Factorio Mod Portal</1> verfügbar sein."
-        },
-        "processing-savegame": "Dein Spielstand wird verarbeitet...",
-        "save-new-setting": "Neue Einstellung speichern",
-        "savegame-error": {
-            "invalid-file": {
-                "headline": "Die ausgewählte Datei ist kein gültiger Factorio-Spielstand.",
-                "description": "Bitte stelle sicher, dass du einen gültigen Spielstand auswählst."
-            },
-            "unsupported-version": {
-                "headline": "Der Spielstand wird nicht unterstützt.",
-                "description": "Der Spielstand stammt aus den Alpha-Versionen von Factorio, welche vom Factorio Item Browser nicht unterstützt werden. Bitte wähle einen Spielstand von Factorio 1.0 oder neuer aus."
-            }
-        },
-        "savegame-modlist": {
-            "headline": "{{count}} Mod erkannt:",
-            "headline_plural": "{{count}} Mods erkannt:"
-        },
-        "savegame-upload-note": {
-            "headline": "Die Datei wird nicht auf den Server hochgeladen.",
-            "description": "Der ausgewählte Spielstand wird direkt in deinem Browser verarbeitet und nur die ermittelte Liste an Mods wird durch das Internet geschickt. Der Spielstand wird dein System nicht verlassen."
-        },
-        "saving-new-setting": "Speichere neue Einstellung...",
-        "select-savegame-file": "Wähle deinen Factorio-Spielstand aus",
-        "step": {
-            "additional-options": "3. Zusätzliche Optionen",
-            "data-availability": "2. Datenverfügbarkeit",
-            "savegame": "1. Spielstand auswählen"
-        },
-        "title": "Neue Einstellung - Factorio Item Browser"
-    },
-    "setting-status": {
-        "available": {
-            "headline": "Daten sind verfügbar.",
-            "description": "Die Daten für deine Kombination an Mods sind bereits verfügbar. Speichere deine Einstellung und leg' los!"
-        },
-        "errored": {
-            "headline": "Datenexport ist fehlgeschlagen",
-            "description": "Ein zuvor gestarteter Datenexoirt für diese Mods ist fehlgeschlagen. Sorry, aber die benötigten Daten können aktuell nicht zur Verfügung gestellt werden.",
-            "description-global": "Du betrachtest die unmodifizierten Daten von Vanilla. Der Datenexport von deinen Mods ist fehlgeschlagen. Sorry, aber die benötigten Daten können aktuell nicht zur Verfügung gestellt werden.",
-            "description-setting": "Der Datenexport für diese Einstellung ist fehlgeschlagen. Nur die unmodifizierten Daten von Vanilla sind verfügbar. Sorry, aber die benötigten Daten können aktuell nicht zur Verfügung gestellt werden."
-        },
-        "invalid": {
-            "headline": "Die Kombination der Mods ist nicht gültig.",
-            "description-1": "Dein Spielstand enthält eine ungültige Combination an Mods. Die folgenden Probleme wurden festgestellt:",
-            "description-2": "Deswegen können die Daten für die Kombination nicht bereitgestellt werden."
-        },
-        "loading": {
-            "headline": "Datenverfügbarkeit wird geprüft...",
-            "description": ""
-        },
-        "pending": {
-            "headline": "Datenexport ist in der Warteschlange.",
-            "description": "Der Datenexport für diese Mods wurde bereits angelegt und wartet aktuell, bis er an der Reihe ist.",
-            "description-global": "Du betrachtest die unmodifizierten Daten von Vanilla. Die Daten für deine Kombination an Mods warten aktuell darauf, aus dem Spiel exportiert zu werden, und sind noch nicht verfügbar.",
-            "description-setting": "Die Daten für diese Einstellungen warten darauf, exportiert zu werden. Nur die unmodifizierten Daten von Vanilla sind verfügbar."
-        },
-        "unknown": {
-            "headline": "Daten sind aktuell nicht verfügbar.",
-            "description": "Die Daten für diese Kombination an Mods sind aktuell nicht verfügbar und ein Datenexport wird angelegt, sobald du die neue Einstellung speicherst."
-        },
-        "validation-problem": {
-            "conflict": "Die Mod \"{{mod}}\" steht im Konflikt mit einer anderen Mod: {{dependency}}",
-            "missingDependency": "Der Mod \"{{mod}}\" fehlt eine benötigte Abhängigkeit: {{dependency}}",
-            "noRelease": "Die Mod \"{{mod}}\" besitzt kein Release auf dem Factorio Mod Portal, welches mit der neuesten Version von Factorio kompatibel ist.",
-            "unknownMod": "Die Mod \"{{mod}}\" ist auf dem Factorio Mod Portal nicht verfügbar."
-        }
     },
     "sidebar": {
         "action-pin": "Element oben anheften",
@@ -259,12 +151,5 @@
         "headline-last-viewed": "Zuletzt angesehen",
         "headline-pinned": "Angeheftet",
         "setting": "Einstellung: {{name}}"
-    },
-    "temporary-setting": {
-        "headline": "Du betrachtes eine temporäre Einstellung.",
-        "description-1": "Die aktuelle Kombination von Mods ist noch nicht in deinem Profil gespeichert. Füge die Einstellung zu deinem Profil hinzu, wenn du diese behalten möchtest.",
-        "description-2": "Temporäre Einstellungen werden nach einer kurzer Zeit entfernt.",
-        "button-undo": "Wechsle zurück zu \"{{name}}\"",
-        "button-add": "Temporäre Einstellung hinzufügen"
     }
 }

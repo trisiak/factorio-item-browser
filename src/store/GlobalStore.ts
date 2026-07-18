@@ -1,4 +1,4 @@
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable } from "mobx";
 import { createContext, RefObject } from "react";
 import { getI18n } from "react-i18next";
 import { State } from "router5";
@@ -9,7 +9,8 @@ import { CombinationId } from "../class/CombinationId";
 import { router, Router } from "../class/Router";
 import { storageManager, StorageManager } from "../class/StorageManager";
 import { CombinationNotFoundError, PageError, PageNotFoundError } from "../error/page";
-import { RouteName, SettingStatus } from "../util/const";
+import { Config } from "../util/config";
+import { RouteName } from "../util/const";
 import { errorStore, ErrorStore } from "./ErrorStore";
 
 type InitHandler = (initData: InitData) => void | Promise<void>;
@@ -32,8 +33,6 @@ export class GlobalStore {
 
     /** The currently loaded setting. */
     public setting: SettingData = emptySettingData;
-    /** The last used setting in case the current one is temporary. */
-    public lastUsedSetting: SettingData = emptySettingData;
 
     public constructor(errorStore: ErrorStore, portalApi: PortalApi, router: Router, storageManager: StorageManager) {
         this.errorStore = errorStore;
@@ -42,13 +41,10 @@ export class GlobalStore {
         this.storageManager = storageManager;
 
         makeObservable<this, "handleGlobalRouteChange" | "handleInit">(this, {
-            checkSettingStatus: action,
             currentRoute: observable,
             handleGlobalRouteChange: action,
             handleInit: action,
-            isGlobalSettingStatusShown: computed,
             isInitiallyLoading: computed,
-            lastUsedSetting: observable,
             loadingCircleTarget: observable,
             setting: observable,
             showLoadingCircle: action,
@@ -67,7 +63,6 @@ export class GlobalStore {
 
     private async handleInit(initData: InitData): Promise<void> {
         this.setting = initData.setting;
-        this.lastUsedSetting = initData.lastUsedSetting || initData.setting;
 
         await getI18n().changeLanguage(initData.setting.locale);
     }
@@ -84,13 +79,6 @@ export class GlobalStore {
      */
     public get useBigHeader(): boolean {
         return this.currentRoute === RouteName.Index;
-    }
-
-    /**
-     * Returns whether the global setting status should be shown.
-     */
-    public get isGlobalSettingStatusShown(): boolean {
-        return ![RouteName.Settings, RouteName.SettingsNew].includes(this.currentRoute);
     }
 
     /**
@@ -138,28 +126,14 @@ export class GlobalStore {
         this.loadingCircleTarget = target;
     }
 
-    /**
-     * Checks the current status of the setting, if its data is still not available.
-     */
-    public async checkSettingStatus(): Promise<void> {
-        if ([SettingStatus.Pending, SettingStatus.Unknown].includes(this.setting.status as SettingStatus)) {
-            try {
-                const setting = await this.portalApi.getSetting(this.setting.combinationId);
-                if (setting.status === SettingStatus.Available) {
-                    window.location.reload();
-                } else {
-                    runInAction(() => {
-                        this.setting = setting;
-                    });
-                }
-            } catch (e) {
-                // Ignore any errors related to checking the setting status.
-            }
-        }
-    }
-
     private detectInitialCombinationId(): void {
-        const combinationId = this.matchCombinationId(window.location.pathname);
+        // Strip the base path prefix (e.g. on GitHub Pages) before sniffing the id.
+        let path = window.location.pathname;
+        if (Config.basePath && path.startsWith(Config.basePath)) {
+            path = path.substring(Config.basePath.length);
+        }
+
+        const combinationId = this.matchCombinationId(path);
         if (combinationId !== null) {
             this.storageManager.combinationId = combinationId;
         }

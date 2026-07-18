@@ -43,9 +43,11 @@
         }
     },
     "footer": {
+        "fork-disclaimer": "An independent fork of the original <1>Factorio Item Browser</1>.",
         "copyright-disclaimer": "Content and images are owned by <1>Wube Software</1> and the <3>mod authors</3> respectively.",
+        "data-disclaimer": "Item and recipe data currently provided by <1>FactorioLab</1>.",
         "external-link": {
-            "discord": "Encountering problems or having feedback? Join the Discord server!"
+            "github": "View the source code of this fork on GitHub."
         }
     },
     "header": {
@@ -118,140 +120,29 @@
         "temporary": "Temporary"
     },
     "settings": {
-        "add-temporary": "Add temporary setting",
-        "adding-temporary": "Adding temporary setting...",
         "change-to-setting": "Change to \"{{name}}\"",
         "changing-to-setting": "Changing to \"{{name}}\"...",
-        "combination-id": {
-            "label": "Combination Id:",
-            "description": "This id identifies the combination of mods you are using. If you encounter a problem, <1>join the Discord server</1> and specify this id with your report."
-        },
         "current-setting": {
-            "add-new-setting": "Add new setting",
-            "delete-setting": "Delete setting \"{{name}}\"",
-            "deleting-setting": "Deleting setting \"{{name}}\"...",
             "label": "Current setting:"
         },
         "headline": {
             "mod-list": "\"{{name}}\" uses {{count}} mod",
             "mod-list_plural": "\"{{name}}\" uses {{count}} mods",
-            "mod-list-temporary": "Temporary setting uses {{count}} mod",
-            "mod-list-temporary_plural": "Temporary setting uses {{count}} mods",
             "options": "Options for \"{{name}}\"",
-            "options-temporary": "Options for temporary setting",
             "settings": "Settings"
         },
         "locale": {
             "label": "Language:",
-            "description": "The translations of the items, recipes etc. are provided by the mods themselves. Missing translations are replaced with English, the same way they are in-game."
+            "description": "Changes the language of the user interface. Item and recipe names are currently available in English only."
         },
         "mod-list": {
             "author": "Author:",
             "name": "Name:",
             "version": "Version:"
         },
-        "name": {
-            "label": "Name:",
-            "placeholder": "Please enter a name for the setting."
-        },
-        "recipe-mode": {
-            "label": "Recipe mode:",
-            "description": "The recipe mode defines how to handle recipes with a normal and an expensive variant. Select \"Normal mode\" or \"Expensive mode\" to only display that variant, or \"Hybrid mode\" to display both variants with the expensive one being marked in red.",
-            "option": {
-                "hybrid": "Hybrid mode",
-                "normal": "Normal mode",
-                "expensive": "Expensive mode"
-            }
-        },
-        "save-and-change": "Save options and change to \"{{name}}\"",
         "save-options": "Save options",
         "saving-options": "Saving options...",
-        "saving-and-changing": "Saving options and changing to \"{{name}}\"...",
         "title": "Settings - Factorio Item Browser"
-    },
-    "settings-new": {
-        "add-new-setting": "Add new setting",
-        "cancel": "Cancel",
-        "change-to-setting": "Change to \"{{name}}\"",
-        "changing-to-setting": "Changing to \"{{name}}\"...",
-        "discord": {
-            "label": "Join the Discord server if you need help.",
-            "description": "If your savegame file is not working, or if you have any other problem getting your combination of mods to work, join the Discord server and ask for assistance."
-        },
-        "existing-setting": {
-            "headline": "You already have a setting using these mods.",
-            "description": "It is not possible to create another setting using the same mods. Please use the existing one instead."
-        },
-        "explanation": {
-            "description-1": "To add a new setting, you have to specify your savegame file. This file contains a list of mods you are currently using. If the data to these mods is not yet available, the Factorio Item Browser will automatically export the data from the game, and add it to the website. This process will take about 15 minutes on average, but may take longer depending on the server load.",
-            "description-2": "For a default installation you find your savegames at the following location:",
-            "description-3": "Please keep in mind that Factorio as well as all mods must be up-to-date. If either is outdated, the data export may be inaccurate or may fail altogether. Also, all mods must be available on the <1>Factorio mod portal</1>."
-        },
-        "processing-savegame": "Processing your savegame...",
-        "save-new-setting": "Save new setting",
-        "savegame-error": {
-            "invalid-file": {
-                "headline": "The selected file is not a valid Factorio savegame.",
-                "description": "Please make sure you are selecting a valid savegame file."
-            },
-            "unsupported-version": {
-                "headline": "The savegame is not supported.",
-                "description": "The savegame is from the alpha versions of Factorio, which are not supported by the Factorio Item Browser. Please select a savegame from Factorio 1.0 or newer."
-            }
-        },
-        "savegame-modlist": {
-            "headline": "Detected {{count}} mod:",
-            "headline_plural": "Detected {{count}} mods:"
-        },
-        "savegame-upload-note": {
-            "headline": "The file is not uploaded to the server.",
-            "description": "The selected savegame gets processed directly in your browser and only the extracted list of mods is send through the internet. The savegame itself will not leave your system."
-        },
-        "saving-new-setting": "Saving new setting...",
-        "select-savegame-file": "Select your Factorio savegame",
-        "step": {
-            "additional-options": "3. Additional options",
-            "data-availability": "2. Data availability",
-            "savegame": "1. Select savegame"
-        },
-        "title": "New Setting - Factorio Item Browser"
-    },
-    "setting-status": {
-        "available": {
-            "headline": "Data is available.",
-            "description": "The data for your combination of mods is already available. Save the new setting and start browsing!"
-        },
-        "errored": {
-            "headline": "Data export has failed.",
-            "description": "A previously triggered data export of these mods has failed. Sorry, but the required data cannot be made available at this point.",
-            "description-global": "You are viewing the unmodded Vanilla data. The data export of your mods has failed. Sorry, but the required data cannot be made available at this point.",
-            "description-setting": "The data export for this setting has failed. Only the unmodded Vanilla data is available. Sorry, but the required data cannot be made available at this point."
-        },
-        "invalid": {
-            "headline": "The combination of mods is not valid.",
-            "description-1": "Your savegame does not represent a valid combination of mods. The following problems have been encountered:",
-            "description-2": "Because of this, the data for this combination cannot be made available."
-        },
-        "loading": {
-            "headline": "Checking data availability...",
-            "description": ""
-        },
-        "pending": {
-            "headline": "Data export is waiting.",
-            "description": "The data export of these mods was already triggered and is currently waiting to get its turn.",
-            "description-global": "You are viewing the unmodded Vanilla data. The data of your combination of mods is waiting to get exported from the game and is not yet available.",
-            "description-setting": "The data for this setting is waiting to get exported. Only the unmodded Vanilla data is available."
-        },
-        "unknown": {
-            "headline": "Data is currently not available.",
-            "description": "The data for these mods is currently not available and a data export gets triggered when saving the new setting."
-        },
-        "validation-problem": {
-            "conflict": "The mod \"{{mod}}\" is in conflict with another mod: {{dependency}}",
-            "missingDependency": "The mod \"{{mod}}\" is missing a required dependency: {{dependency}}",
-            "noRelease": "The mod \"{{mod}}\" does not have a release on the Factorio Mod Portal, which supports the latest version of Factorio.",
-            "unknownMod": "The mod \"{{mod}}\" is not available on the Factorio Mod Portal."
-        }
     },
     "sidebar": {
         "action-pin": "Pin element to the top",
@@ -260,12 +151,5 @@
         "headline-last-viewed": "Last viewed",
         "headline-pinned": "Pinned",
         "setting": "Setting: {{name}}"
-    },
-    "temporary-setting": {
-        "headline": "You are viewing a temporary setting.",
-        "description-1": "The current combination of mods hat not yet been saved to your profile. Add the setting to your profile if you want to keep it.",
-        "description-2": "Temporary settings will get cleaned after a short amount of time.",
-        "button-undo": "Change back to \"{{name}}\"",
-        "button-add": "Add temporary setting"
     }
 }

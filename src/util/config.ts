@@ -1,4 +1,4 @@
-import { faDiscord, IconDefinition } from "@fortawesome/free-brands-svg-icons";
+import { faGithub, IconDefinition } from "@fortawesome/free-brands-svg-icons";
 
 type FooterIcon = {
     name: string;
@@ -9,9 +9,12 @@ type FooterIcon = {
 export const Config = {
     // env variables
     cacheLifetime: parseInt(process.env.CACHE_LIFETIME || "", 10),
-    discordLink: process.env.DISCORD_LINK || "",
-    intervalCheckSettingStatus: parseInt(process.env.INTERVAL_CHECK_SETTING_STATUS || "", 10),
-    portalApiUrl: process.env.PORTAL_API_URI || "",
+    /**
+     * The path prefix the app is served under (e.g. "/factorio-item-browser" on GitHub
+     * Pages project sites), without a trailing slash. Empty when served from the root.
+     * Injected at build time via the BASE_PATH env variable.
+     */
+    basePath: (process.env.BASE_PATH || "").replace(/\/$/, ""),
 
     // Static configuration values
     craftingTimeInfinite: 100000,
@@ -25,9 +28,9 @@ export const Config = {
 
     footerIcons: [
         {
-            name: "discord",
-            url: process.env.DISCORD_LINK || "",
-            icon: faDiscord,
+            name: "github",
+            url: "https://github.com/trisiak/factorio-item-browser",
+            icon: faGithub,
         },
     ] as FooterIcon[],
 };
