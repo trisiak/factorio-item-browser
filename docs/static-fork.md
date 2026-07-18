@@ -98,11 +98,18 @@ should mirror this checklist and the two must stay reconciled.
   some display names are duplicated across genuinely distinct entities
   (`centrifuge` vs `se-centrifuge`, aai container base variants). A future
   own-pack adapter can model these more faithfully.
-- [ ] **Phase 5 — static hosting + deploy.** SPA fallback for GitHub Pages
-  (404.html trick), drop `.htaccess` domain redirect, CI deploy workflow.
-  Re-add an `og:url` meta and an `opensearch.xml` once the fork has a real
-  public URL (both were removed with the branding pass because they
-  hardcoded the original site's domain).
+- [x] **Phase 5 — static hosting + deploy.** The build is base-path aware:
+  `BASE_PATH` (env, build-time) flows into webpack `publicPath`, the
+  `<base>` tag, the router5 browser plugin (`base` option), built hrefs and
+  the combination-id sniffing; `PUBLIC_URL` re-adds the `og:url` meta. The
+  build emits `404.html` (same app, same inlined CSS) as the GitHub Pages
+  SPA fallback; the upstream `.htaccess` (Apache domain redirect) is gone;
+  the manifest scope is subpath-safe. `pages.yaml` deploys `build/` via the
+  official Pages actions on master pushes (+ manual dispatch), building
+  with `BASE_PATH=/<repo>/`. Verified locally against a GH-Pages-simulating
+  server (subpath + 404 fallback): deep links boot, redirect to the
+  prefixed short-id URL, click-through and fresh deep links work.
+  `opensearch.xml` stays dropped (niche; revisit on request).
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

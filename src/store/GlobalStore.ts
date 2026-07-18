@@ -9,6 +9,7 @@ import { CombinationId } from "../class/CombinationId";
 import { router, Router } from "../class/Router";
 import { storageManager, StorageManager } from "../class/StorageManager";
 import { CombinationNotFoundError, PageError, PageNotFoundError } from "../error/page";
+import { Config } from "../util/config";
 import { RouteName } from "../util/const";
 import { errorStore, ErrorStore } from "./ErrorStore";
 
@@ -126,7 +127,13 @@ export class GlobalStore {
     }
 
     private detectInitialCombinationId(): void {
-        const combinationId = this.matchCombinationId(window.location.pathname);
+        // Strip the base path prefix (e.g. on GitHub Pages) before sniffing the id.
+        let path = window.location.pathname;
+        if (Config.basePath && path.startsWith(Config.basePath)) {
+            path = path.substring(Config.basePath.length);
+        }
+
+        const combinationId = this.matchCombinationId(path);
         if (combinationId !== null) {
             this.storageManager.combinationId = combinationId;
         }

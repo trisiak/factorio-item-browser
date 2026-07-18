@@ -1,6 +1,7 @@
 import { createRouter, Middleware, Router as Router5, State, SubscribeState } from "router5";
 import browserPluginFactory from "router5-plugin-browser";
 import { PageError } from "../error/page";
+import { Config } from "../util/config";
 import { RouteName } from "../util/const";
 import { CombinationId } from "./CombinationId";
 
@@ -29,7 +30,7 @@ export class Router {
     private createRouter(): Router5 {
         const router = createRouter();
         router.setOption("allowNotFound", true);
-        router.usePlugin(browserPluginFactory());
+        router.usePlugin(browserPluginFactory({ base: Config.basePath }));
         router.useMiddleware(this.getDataFetcherMiddleware.bind(this));
         router.subscribe(this.handleChangeEvent.bind(this));
         return router;
@@ -123,7 +124,8 @@ export class Router {
     }
 
     public buildPath(route: string, params?: RouteParams): string {
-        return this.router.buildPath(route, this.prepareParams(params));
+        // Include the base path so built hrefs work when served under a path prefix.
+        return Config.basePath + this.router.buildPath(route, this.prepareParams(params));
     }
 
     public redirectToIndex(combinationId: CombinationId): void {

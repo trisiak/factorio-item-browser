@@ -2,7 +2,7 @@
   "name": "Factorio Item Browser",
   "short_name": "FIB",
   "start_url": ".",
-  "scope": "/",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#165868",
   "theme_color": "#165868",

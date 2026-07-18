@@ -16,10 +16,19 @@ module.exports = (env, argv) => {
 
     const envFilePath = isProduction ? `${currentPath}/.env` : `${currentPath}/.env.development`;
     const envFile = dotenv.config({ path: envFilePath }).parsed || {};
+
+    // The path prefix the app is deployed under (e.g. "/factorio-item-browser/" on a
+    // GitHub Pages project site) and the absolute public URL (for og:url). Both come from
+    // the build environment (set by the deploy workflow), not the .env file.
+    const basePath = (process.env.BASE_PATH || "").replace(/\/$/, "");
+    const publicPath = `${basePath}/`;
+    const publicUrl = process.env.PUBLIC_URL || "";
+
     const envVars = {};
     for (const [name, value] of Object.entries(envFile)) {
         envVars[`process.env.${name}`] = JSON.stringify(value);
     }
+    envVars["process.env.BASE_PATH"] = JSON.stringify(basePath);
 
     return {
         entry: {
@@ -40,7 +49,7 @@ module.exports = (env, argv) => {
         },
         output: {
             path: `${currentPath}/build`,
-            publicPath: "/",
+            publicPath: publicPath,
             filename: isProduction ? "asset/js/[name].[contenthash].js" : "asset/js/[name].js",
         },
         resolve: {
@@ -89,7 +98,6 @@ module.exports = (env, argv) => {
             new CleanWebpackPlugin(),
             new CopyPlugin({
                 patterns: [
-                    { from: `${currentPath}/src/root/.htaccess` },
                     { from: `${currentPath}/src/root/favicon.ico` },
                     { from: `${currentPath}/src/root/manifest.webmanifest` },
                 ],
@@ -102,6 +110,16 @@ module.exports = (env, argv) => {
                 template: `${currentPath}/src/index.ejs`,
                 inject: "body",
                 scriptLoading: "defer",
+                templateParameters: { publicPath, publicUrl },
+            }),
+            // GitHub Pages serves 404.html for unknown paths; shipping the app as the 404
+            // page is the standard SPA fallback there (the router reads location.pathname).
+            new HtmlWebpackPlugin({
+                filename: "404.html",
+                template: `${currentPath}/src/index.ejs`,
+                inject: "body",
+                scriptLoading: "defer",
+                templateParameters: { publicPath, publicUrl },
             }),
             new HtmlWebpackSkipAssetsPlugin({
                 skipAssets: [
@@ -110,7 +128,12 @@ module.exports = (env, argv) => {
             }),
             new HtmlInlineCSSWebpackPlugin({
                 filter(fileName) {
-                    return isProduction && (fileName === "index.html" || fileName.includes("main"));
+                    // 404.html is the SPA fallback on GitHub Pages and needs the same
+                    // inlined CSS as index.html (the emitted main.css file is removed).
+                    return (
+                        isProduction &&
+                        (fileName === "index.html" || fileName === "404.html" || fileName.includes("main"))
+                    );
                 },
             }),
             new AsyncCssPlugin(),
