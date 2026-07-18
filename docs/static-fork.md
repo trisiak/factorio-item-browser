@@ -72,11 +72,32 @@ should mirror this checklist and the two must stay reconciled.
   shipped with Phase 1 (`PackData.search`). Remaining: evaluate result
   quality on the big packs (sxp) and improve ranking/matching only if it
   falls short in practice.
-- [ ] **Phase 4 — settings → pack picker.** Replace the settings pages with a
-  static pack picker; delete the savegame wizard (`SaveGameReader`,
-  `SettingsNewStore`, `settingNew/` components, `fflate`/`byte-buffer` deps),
-  setting validation, and status polling (`GlobalSettingStatus`,
-  `checkSettingStatus`); `sendSidebarEntities` persists to localStorage only.
+- [x] **Phase 4 — settings → pack picker.** The settings page is now a pack
+  picker (pack dropdown + change button + locale option + mod list). Deleted
+  wholesale: the savegame wizard (`SaveGameReader`, `SettingsNewStore`,
+  `settingNew/` components, `fflate`/`byte-buffer` deps), setting
+  validation/deletion, status polling (`GlobalSettingStatus`,
+  `TemporarySettingStatus`, `SelectedSettingStatus`, `checkSettingStatus`,
+  `useInterval`), the axios `HttpPortalApi` reference implementation (+ the
+  `axios` dep and `PORTAL_API_URI`/`DISCORD_LINK`/
+  `INTERVAL_CHECK_SETTING_STATUS` env vars — the git history keeps the
+  reference), and the last Discord references. The `PortalApi` interface
+  shrank to the 16 methods actually used. Locale files pruned of the dead
+  blocks; the language picker lists only en/de (the locales that exist);
+  its description now says labels are English-only. Mod cards hide the
+  author row when the data source has no author (FactorioLab's `version`
+  map doesn't).
+- [x] **sxp (Space Exploration) basic checks.** Verified in Chromium: pack
+  switch via the settings picker works; `data.json` loads fast (item list
+  ~0.7 s cold); 899 items+fluids listed (= FactorioLab's 1470 items minus
+  571 technologies — the tech filter accounts exactly); search finds SE
+  content; item/recipe pages and icons render; no console errors. Data
+  quirks observed and accepted as upstream-data realities, not mapping
+  bugs: SE's own dummy pseudo-items appear (e.g. "Cargo rocket (Hidden
+  Ingredient)" = `se-rocket-launch-pad-silo-dummy-ingredient-item`), and
+  some display names are duplicated across genuinely distinct entities
+  (`centrifuge` vs `se-centrifuge`, aai container base variants). A future
+  own-pack adapter can model these more faithfully.
 - [ ] **Phase 5 — static hosting + deploy.** SPA fallback for GitHub Pages
   (404.html trick), drop `.htaccess` domain redirect, CI deploy workflow.
   Re-add an `og:url` meta and an `opensearch.xml` once the fork has a real

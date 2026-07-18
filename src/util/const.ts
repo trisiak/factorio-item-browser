@@ -1,12 +1,3 @@
-export enum BoxStatus {
-    Discord = "discord", // Pseudo-status to have a link to discord look the same as a status box.
-    Error = "error",
-    Info = "info",
-    Pending = "pending",
-    Success = "success",
-    Warning = "warning",
-}
-
 export enum Breakpoint {
     Small = 0,
     Medium = 800,
@@ -28,7 +19,6 @@ export enum RouteName {
     RecipeDetails = "recipeDetails",
     Search = "search",
     Settings = "settings",
-    SettingsNew = "settingsNew",
 }
 
 export enum SettingStatus {

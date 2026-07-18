@@ -9,9 +9,6 @@ type FooterIcon = {
 export const Config = {
     // env variables
     cacheLifetime: parseInt(process.env.CACHE_LIFETIME || "", 10),
-    discordLink: process.env.DISCORD_LINK || "",
-    intervalCheckSettingStatus: parseInt(process.env.INTERVAL_CHECK_SETTING_STATUS || "", 10),
-    portalApiUrl: process.env.PORTAL_API_URI || "",
 
     // Static configuration values
     craftingTimeInfinite: 100000,

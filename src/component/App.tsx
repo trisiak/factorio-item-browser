@@ -17,10 +17,7 @@ import ItemDetailsPage from "./page/ItemDetailsPage";
 import ItemListPage from "./page/ItemListPage";
 import RecipeDetailsPage from "./page/RecipeDetailsPage";
 import SearchResultsPage from "./page/SearchResultsPage";
-import SettingsNewPage from "./page/SettingsNewPage";
 import SettingsPage from "./page/SettingsPage";
-import GlobalSettingStatus from "./status/GlobalSettingStatus";
-import TemporarySettingStatus from "./status/TemporarySettingStatus";
 
 import "./App.scss";
 
@@ -31,7 +28,6 @@ const PAGE_BY_ROUTES: { [key: string]: ReactNode } = {
     [RouteName.RecipeDetails]: <RecipeDetailsPage />,
     [RouteName.Search]: <SearchResultsPage />,
     [RouteName.Settings]: <SettingsPage />,
-    [RouteName.SettingsNew]: <SettingsNewPage />,
 };
 
 /**
@@ -67,18 +63,7 @@ const App: FC = () => {
             <Header />
             <div className="content-wrapper">
                 <Sidebar />
-                <div className="content">
-                    {globalStore.isGlobalSettingStatusShown ? (
-                        <>
-                            <TemporarySettingStatus
-                                setting={globalStore.setting}
-                                lastUsedSetting={globalStore.lastUsedSetting}
-                            />
-                            <GlobalSettingStatus />
-                        </>
-                    ) : null}
-                    {page}
-                </div>
+                <div className="content">{page}</div>
             </div>
             <Footer />
 

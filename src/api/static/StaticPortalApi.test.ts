@@ -202,10 +202,6 @@ describe("StaticPortalApi", (): void => {
         expect(setting.name).toBe("Renamed");
         expect(setting.locale).toBe("de");
         expect(setting.recipeMode).toBe("normal");
-
-        await api.deleteSetting(packs[0].combinationId);
-        const reset = await api.getSetting(packs[0].combinationId);
-        expect(reset.name).toBe(packs[0].label);
     });
 
     test("getIconsStyle builds percentage rules and reports processed entities", async (): Promise<void> => {

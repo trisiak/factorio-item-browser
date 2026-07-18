@@ -27,16 +27,6 @@ export function useIcon(type: string, name: string): string {
 }
 
 /**
- * Uses an interval calling the callback after the timeout has passed.
- */
-export function useInterval(timeout: number, callback: () => void | Promise<void>): void {
-    useEffect(() => {
-        const interval = window.setInterval(callback, timeout);
-        return (): void => window.clearTimeout(interval);
-    }, []);
-}
-
-/**
  * Uses a scroll effect.
  */
 export function useScrollEffect(callback: () => void | Promise<void>): void {

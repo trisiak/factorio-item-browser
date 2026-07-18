@@ -2,7 +2,7 @@ import { CombinationId } from "../../class/CombinationId";
 import { StorageManager } from "../../class/StorageManager";
 import { PageNotFoundError, ServiceNotAvailableError } from "../../error/page";
 import { Config } from "../../util/config";
-import { RecipeMode, SettingStatus, ValidationProblemType } from "../../util/const";
+import { RecipeMode, SettingStatus } from "../../util/const";
 import { PortalApi } from "../PortalApi";
 import {
     EntityData,
@@ -18,7 +18,6 @@ import {
     SearchResultsData,
     SettingData,
     SettingOptionsData,
-    SettingValidationData,
     SidebarEntityData,
 } from "../transfer";
 import { PackData } from "./PackData";
@@ -226,22 +225,6 @@ export class StaticPortalApi implements PortalApi {
         return packs.map((pack) => this.buildSettingData(pack));
     }
 
-    public async validateSetting(modNames: string[]): Promise<SettingValidationData> {
-        // There is no live export pipeline: a mod set is only "valid" if it exactly matches
-        // one of the bundled packs. Anything else is unknown.
-        return {
-            combinationId: "",
-            status: SettingStatus.Unknown,
-            isValid: false,
-            validationProblems: modNames.map((modName) => ({
-                mod: modName,
-                version: "",
-                type: ValidationProblemType.UnknownMod,
-                dependency: "",
-            })),
-        };
-    }
-
     public async getSetting(combinationId: string): Promise<SettingData> {
         const pack = findPackByCombinationId(combinationId);
         if (!pack) {
@@ -256,18 +239,6 @@ export class StaticPortalApi implements PortalApi {
             throw new PageNotFoundError(`No pack is known for the combination "${combinationId}".`);
         }
         this.writePersistedOptions(pack.id, options);
-    }
-
-    public async deleteSetting(combinationId: string): Promise<void> {
-        // The bundled packs cannot be deleted; only their persisted options are reset.
-        const pack = findPackByCombinationId(combinationId);
-        if (pack) {
-            try {
-                window.localStorage.removeItem(`${KEY_SETTING_OPTIONS}-${pack.id}`);
-            } catch (e) {
-                // Ignore.
-            }
-        }
     }
 
     public async getSettingMods(combinationId: string): Promise<ModData[]> {
