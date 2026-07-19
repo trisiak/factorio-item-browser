@@ -40,6 +40,7 @@ export interface PortalApi {
     getItemList(page: number): Promise<ItemListData>;
     getRandom(): Promise<EntityData[]>;
     getRecipeDetails(name: string): Promise<RecipeDetailsData>;
+    getRecipeResearch(name: string): Promise<TechnologyData[]>;
     getRecipeMachines(name: string, page: number): Promise<RecipeMachinesData>;
     search(query: string, page: number): Promise<SearchResultsData>;
     getSettings(): Promise<SettingData[]>;

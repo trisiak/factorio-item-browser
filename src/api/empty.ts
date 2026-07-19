@@ -43,6 +43,7 @@ export const emptyTechnologyData: TechnologyData = {
     prerequisites: [],
     unlockedRecipes: [],
     numberOfUnlockedRecipes: 0,
+    unlockedTechnologies: [],
 };
 
 export const emptyItemResearchData: ItemResearchData = {

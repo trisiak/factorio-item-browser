@@ -247,6 +247,15 @@ describe("StaticPortalApi", (): void => {
         expect(technology.prerequisites).toEqual([{ name: "widget-tech", label: "Widget technology" }]);
         expect(technology.unlockedRecipes.map((entity) => entity.name)).toEqual(["doubler-recipe"]);
         expect(technology.numberOfUnlockedRecipes).toBe(1);
+        // Nothing lists mining-tech as a prerequisite, so it leads to no further technology.
+        expect(technology.unlockedTechnologies).toEqual([]);
+    });
+
+    test("getTechnology lists the technologies it leads to (reverse of prerequisites)", async (): Promise<void> => {
+        // mining-tech lists widget-tech as a prerequisite, so widget-tech leads to it.
+        const technology = await api.getTechnology("widget-tech");
+
+        expect(technology.unlockedTechnologies).toEqual([{ name: "mining-tech", label: "Mining technology" }]);
     });
 
     test("getTechnology reports trigger technologies with no research cost", async (): Promise<void> => {
@@ -257,6 +266,15 @@ describe("StaticPortalApi", (): void => {
         expect(technology.ingredients).toEqual([]);
         expect(technology.prerequisites).toEqual([]);
         expect(technology.unlockedRecipes).toEqual([]);
+    });
+
+    test("getRecipeResearch lists the technologies that unlock a recipe", async (): Promise<void> => {
+        const technologies = await api.getRecipeResearch("doubler-recipe");
+        expect(technologies.map((technology) => technology.name)).toEqual(["mining-tech"]);
+        expect(technologies[0].ingredients[0].name).toBe("science-pack");
+
+        // A recipe no technology unlocks is start-available.
+        expect(await api.getRecipeResearch("gizmo-recipe")).toEqual([]);
     });
 
     test("getTechnology rejects unknown technologies", async (): Promise<void> => {

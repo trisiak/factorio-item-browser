@@ -105,6 +105,8 @@ export type TechnologyData = {
     prerequisites: TechnologyMetaData[];
     unlockedRecipes: EntityData[];
     numberOfUnlockedRecipes: number;
+    /** The technologies this one directly leads to (reverse of prerequisites; partial). */
+    unlockedTechnologies: TechnologyMetaData[];
 };
 
 export type ItemResearchData = {

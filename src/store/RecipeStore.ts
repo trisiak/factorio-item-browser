@@ -3,7 +3,7 @@ import { createContext } from "react";
 import { State } from "router5";
 import { PortalApi, portalApi } from "../api/PortalApi";
 import { emptyRecipeDetailsData, emptyRecipeMachinesData } from "../api/empty";
-import { MachineData, RecipeDetailsData, RecipeMachinesData } from "../api/transfer";
+import { MachineData, RecipeDetailsData, RecipeMachinesData, TechnologyData } from "../api/transfer";
 import { PaginatedList } from "../class/PaginatedList";
 import { router, Router } from "../class/Router";
 import { PageError } from "../error/page";
@@ -20,6 +20,8 @@ export class RecipeStore {
     public recipeDetails: RecipeDetailsData = emptyRecipeDetailsData;
     /** The paginated list of machines to show. */
     public paginatedMachinesList: PaginatedList<MachineData, RecipeMachinesData> | null = null;
+    /** The technologies that unlock this recipe; empty if start-available. */
+    public unlockedByTechnologies: TechnologyData[] = [];
 
     public constructor(errorStore: ErrorStore, portalApi: PortalApi, router: Router, sidebarStore: SidebarStore) {
         this.errorStore = errorStore;
@@ -29,6 +31,7 @@ export class RecipeStore {
         makeObservable<this, "handleRouteChange">(this, {
             recipeDetails: observable,
             paginatedMachinesList: observable,
+            unlockedByTechnologies: observable,
             handleRouteChange: action,
         });
 
@@ -43,15 +46,21 @@ export class RecipeStore {
             this.errorStore.createPaginatesListErrorHandler(emptyRecipeMachinesData),
         );
 
+        // Best-effort like the item page: a failure (or a data source without technology
+        // data) must not break the recipe page, so it falls back to an empty list.
+        const researchPromise = this.portalApi.getRecipeResearch(name).catch(() => [] as TechnologyData[]);
+
         try {
-            const [recipeDetails] = await Promise.all([
+            const [recipeDetails, , technologies] = await Promise.all([
                 this.portalApi.getRecipeDetails(name),
                 newMachinesList.requestNextPage(),
+                researchPromise,
             ]);
 
             runInAction((): void => {
                 this.recipeDetails = recipeDetails;
                 this.paginatedMachinesList = newMachinesList;
+                this.unlockedByTechnologies = technologies;
 
                 this.sidebarStore.addViewedEntity("recipe", recipeDetails.name, recipeDetails.label);
             });

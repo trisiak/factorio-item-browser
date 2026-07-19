@@ -11,8 +11,8 @@ import TechnologyEntityList from "./technology/TechnologyEntityList";
 import TechnologyResearch from "./technology/TechnologyResearch";
 
 /**
- * The component representing the details page of a technology: its research cost, the
- * technologies it depends on (traversable) and the recipes it unlocks.
+ * The component representing the details page of a technology: its research cost, the recipes
+ * it unlocks, and the technologies it depends on / leads to (traversable).
  */
 const TechnologyDetailsPage: FC = () => {
     const technologyStore = useContext(technologyStoreContext);
@@ -31,11 +31,6 @@ const TechnologyDetailsPage: FC = () => {
 
             <TechnologyResearch researchTime={technology.researchTime} ingredients={technology.ingredients} />
 
-            <TechnologyEntityList
-                headline={t("technology-details.prerequisites")}
-                technologies={technology.prerequisites}
-            />
-
             {technology.numberOfUnlockedRecipes > 0 ? (
                 <Section headline={t("technology-details.unlocks", { count: technology.numberOfUnlockedRecipes })}>
                     <EntityList>
@@ -45,6 +40,16 @@ const TechnologyDetailsPage: FC = () => {
                     </EntityList>
                 </Section>
             ) : null}
+
+            <TechnologyEntityList
+                headline={t("technology-details.prerequisites")}
+                technologies={technology.prerequisites}
+            />
+
+            <TechnologyEntityList
+                headline={t("technology-details.leads-to", { count: technology.unlockedTechnologies.length })}
+                technologies={technology.unlockedTechnologies}
+            />
         </Fragment>
     );
 };

@@ -43,11 +43,6 @@ const ItemDetailsPage: FC = () => {
                 </Detail>
             </DetailsHead>
 
-            <TechnologyEntityList
-                headline={t("item-details.unlocked-by", { count: itemStore.unlockedByTechnologies.length })}
-                technologies={itemStore.unlockedByTechnologies}
-            />
-
             <ItemRecipesList
                 paginatedList={itemStore.paginatedProductRecipesList}
                 headlineLocaleKey={"item-details.product-of"}
@@ -59,6 +54,11 @@ const ItemDetailsPage: FC = () => {
             <ItemRecipesList
                 paginatedList={itemStore.paginatedMachineRecipesList}
                 headlineLocaleKey={"item-details.can-craft"}
+            />
+
+            <TechnologyEntityList
+                headline={t("item-details.unlocked-by", { count: itemStore.unlockedByTechnologies.length })}
+                technologies={itemStore.unlockedByTechnologies}
             />
         </Fragment>
     );
