@@ -40,6 +40,7 @@ export class PackData {
     private readonly recipesById = new Map<string, FactorioLabRecipe>();
     private readonly recipeIdsByIngredient = new Map<string, string[]>();
     private readonly recipeIdsByProduct = new Map<string, string[]>();
+    private readonly recipeIdsByProducer = new Map<string, string[]>();
     private readonly iconsById = new Map<string, FactorioLabIcon>();
     private readonly listableItems: FactorioLabItem[];
 
@@ -60,6 +61,9 @@ export class PackData {
             }
             for (const itemId of Object.keys(recipe.out || {})) {
                 this.push(this.recipeIdsByProduct, itemId, recipe.id);
+            }
+            for (const producerId of recipe.producers || []) {
+                this.push(this.recipeIdsByProducer, producerId, recipe.id);
             }
         }
 
@@ -177,8 +181,17 @@ export class PackData {
         return this.paginate(metas, page, Config.numberOfItemsPerPage);
     }
 
-    public getItemRecipes(item: FactorioLabItem, side: "ingredient" | "product", page: number): ItemRecipesData {
-        const map = side === "ingredient" ? this.recipeIdsByIngredient : this.recipeIdsByProduct;
+    public getItemRecipes(
+        item: FactorioLabItem,
+        side: "ingredient" | "product" | "producer",
+        page: number,
+    ): ItemRecipesData {
+        const map =
+            side === "ingredient"
+                ? this.recipeIdsByIngredient
+                : side === "product"
+                ? this.recipeIdsByProduct
+                : this.recipeIdsByProducer;
         const entities = (map.get(item.id) || []).map((recipeId) => {
             return this.buildRecipeEntity(this.recipesById.get(recipeId) as FactorioLabRecipe);
         });

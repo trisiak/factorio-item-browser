@@ -121,6 +121,7 @@ should mirror this checklist and the two must stay reconciled.
 | `getItemProductRecipes` | Recipes where the item id is a key of `out`; paginate. |
 | `getRecipeDetails` | Recipe by id; `craftingTime = time`; `description: ""` (schema has none); no expensive mode. |
 | `getRecipeMachines` | The recipe's `producers` list joined against items with a `machine` sub-object (`craftingSpeed = machine.speed`, `numberOfModules = machine.modules`, `energyUsage = machine.usage` kW; item/fluid slot counts defaulted). |
+| `getMachineRecipes` | The inverse of `producers`: recipes naming the given machine item as a producer, as `ItemRecipesData` (same shape as the item recipe lists). Empty for non-producer items, so the machine's item page only shows a "Can craft" section when it is a crafting machine. |
 | `search` | Client-side name search (Phase 3). |
 | `getRandom` | Random sample of items. |
 | `getTooltip` | Item + up to `numberOfRecipesPerEntity` of its recipes. |

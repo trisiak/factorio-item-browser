@@ -67,6 +67,8 @@
             "item": "Item: {{label}}",
             "fluid": "Fluid: {{label}}"
         },
+        "can-craft": "Can craft {{count}} recipe",
+        "can-craft_plural": "Can craft {{count}} recipes",
         "ingredient-in": "Ingredient in {{count}} recipe",
         "ingredient-in_plural": "Ingredient in {{count}} recipes",
         "more-recipes": {

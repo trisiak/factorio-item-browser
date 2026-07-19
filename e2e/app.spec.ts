@@ -57,6 +57,17 @@ test("recipe details list producing machines", async ({ page }) => {
     expect(await page.locator(".machine-entity").count()).toBeGreaterThan(0);
 });
 
+test("machine item page lists the recipes it can craft", async ({ page }) => {
+    await gotoItemList(page);
+    const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+    await page.goto(`/${shortId}/item/assembling-machine-3`);
+    // The "Can craft" section only appears for machines and holds many recipe entities.
+    await expect(page.locator("h2", { hasText: /Can craft/ })).toBeVisible();
+    const section = page.locator("section", { has: page.locator("h2", { hasText: /Can craft/ }) });
+    expect(await section.locator(".entity").count()).toBeGreaterThan(1);
+});
+
 test("search finds items", async ({ page }) => {
     await gotoItemList(page);
 

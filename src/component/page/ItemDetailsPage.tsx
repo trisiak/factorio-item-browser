@@ -43,6 +43,10 @@ const ItemDetailsPage: FC = () => {
             </DetailsHead>
 
             <ItemRecipesList
+                paginatedList={itemStore.paginatedMachineRecipesList}
+                headlineLocaleKey={"item-details.can-craft"}
+            />
+            <ItemRecipesList
                 paginatedList={itemStore.paginatedProductRecipesList}
                 headlineLocaleKey={"item-details.product-of"}
             />
