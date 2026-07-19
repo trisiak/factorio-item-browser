@@ -158,12 +158,21 @@ to numbers.
   `index.html` to inspect. For a deliberate, curated walk of the key surfaces
   (item list / detail / recipe / search / settings across Vanilla, Space Age
   and Space Exploration, plus the mobile header/drawer/search/recipe states),
-  the opt-in **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`)
-  writes full-page screenshots to `./screenshots` (gitignored) and attaches
-  them to the report. The tour is a separate Playwright project, kept out of
-  the default `npm run test:e2e` and the push-triggered CI job — run it on
-  demand when a change needs visual review before deploy. Screenshots contain
-  game-derived icons/data and must never be committed.
+  the **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`) writes
+  full-page screenshots to `./screenshots` (gitignored) and attaches them to
+  the report. The tour is a separate Playwright project (`--project=tour`),
+  kept out of the default `npm run test:e2e` so the functional check stays
+  fast, but it runs in CI as its own job, `E2E Tour (Visual)`, which uploads
+  the shots as the `tour-screenshots` artifact — download it to eyeball the UI
+  before deploying. Screenshots contain game-derived icons/data and must never
+  be committed.
+
+  CI (`ci.yaml`) triggers on `pull_request` (plus master pushes), so every job
+  — `Tests`, `Coding Guidelines`, `Type Checker`, `Build`, `E2E (Playwright)`
+  and `E2E Tour (Visual)` — surfaces as a PR check that can be marked required
+  in branch protection. Caveat: the two e2e jobs fetch live FactorioLab data,
+  so an upstream data change can turn them red independently of the diff;
+  `retries: 2` on CI absorbs transient flakes.
 
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
