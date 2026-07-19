@@ -136,7 +136,7 @@ should mirror this checklist and the two must stay reconciled.
 - [x] **Phase 6b — technology browsing UI.** Technology is now a first-class
   browsable entity (`type: "technology"`) reachable from items but never listed
   in the "all items" grid. The item page carries an "Unlocked by" section
-  (`ItemStore` best-effort fetches `getItemResearch`, rendered above the recipe
+  (`ItemStore` best-effort fetches `getItemResearch`, rendered *below* the recipe
   lists via a reusable `TechnologyEntityList`); each entry is a clickable
   technology icon+label. A new `/technology/:name` route (`RouteName`,
   `util/route.ts` entity mapping, `TechnologyStore` modelled on `RecipeStore`,
@@ -153,14 +153,22 @@ should mirror this checklist and the two must stay reconciled.
   "Unlocked by" → technology page → clickable prerequisite → next technology,
   research packs/time render, start-available items (e.g. iron ore) show no
   "Unlocked by".
-- [ ] **Phase 6c — technology UX + top-level browse (pending evaluation).**
-  Open questions to settle after living with 6b: whether "Unlocked by" on every
-  item page is too much clutter and wants a lighter treatment (inline chip,
-  collapsed, or moved), and an "All technologies" top-level page mirroring "All
-  items" (icon grid) — would need a `getTechnologyList` data-layer method plus
-  an `ItemList`-style page/route. A technology tooltip on the item/prereq boxes
-  (currently only the sidebar hover resolves one) and a `[technology=…]` rich
-  copy template are smaller follow-ups.
+- [x] **Phase 6c — cross-links + item-page placement.** The research connection
+  now runs both ways at the recipe level: recipe pages carry an "Unlocked by"
+  section (`getRecipeResearch` → `RecipeStore.unlockedByTechnologies`, best-effort
+  like the item page), which is the core recipe↔technology link. Technology pages
+  gain a "Leads to" section listing the technologies they directly unlock
+  (`TechnologyData.unlockedTechnologies`, the reverse of `prerequisites` — partial
+  by nature, and that's fine). The per-item "Unlocked by" aggregation is kept but
+  moved *below* the recipe lists (accepted clutter, demoted rather than removed).
+  New locale keys `recipe-details.unlocked-by` and `technology-details.leads-to`
+  (en/de). Verified on desktop and mobile (unit + e2e + tour): recipe → unlocking
+  technology, technology → leads-to chain, item "Unlocked by" now last.
+- [ ] **Phase 6d — top-level technology browse (pending).** An "All technologies"
+  top-level page mirroring "All items" (icon grid) — would need a
+  `getTechnologyList` data-layer method plus an `ItemList`-style page/route.
+  A technology tooltip on the item/prereq boxes (currently only the sidebar hover
+  resolves one) and a `[technology=…]` rich copy template are smaller follow-ups.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
@@ -174,7 +182,8 @@ should mirror this checklist and the two must stay reconciled.
 | `getRecipeMachines` | The recipe's `producers` list joined against items with a `machine` sub-object (`craftingSpeed = machine.speed`, `numberOfModules = machine.modules`, `energyUsage = machine.usage` kW; item/fluid slot counts defaulted). |
 | `getMachineRecipes` | The inverse of `producers`: recipes naming the given machine item as a producer, as `ItemRecipesData` (same shape as the item recipe lists). Empty for non-producer items, so the machine's item page only shows a "Can craft" section when it is a crafting machine. |
 | `getItemResearch` | Recipes producing the item → the technologies unlocking them (reverse of each technology's `recipeUnlock`), de-duplicated; empty for start-available items (Phase 6a). |
-| `getTechnology` | Technology item → science packs + `time` from its same-id research recipe, `prerequisites` (as clickable refs) and `recipeUnlock` (as recipe entities) (Phase 6a). |
+| `getRecipeResearch` | The technologies that unlock a given recipe (reverse of `recipeUnlock`); the recipe's core research connection, empty for start-available recipes (Phase 6c). |
+| `getTechnology` | Technology item → science packs + `time` from its same-id research recipe, `prerequisites` (clickable refs), `recipeUnlock` (recipe entities), and `unlockedTechnologies` — the reverse of `prerequisites`, i.e. the technologies it directly leads to (Phase 6a/6c). |
 | `search` | Client-side name search (Phase 3). |
 | `getRandom` | Random sample of items. |
 | `getTooltip` | Item + up to `numberOfRecipesPerEntity` of its recipes. |

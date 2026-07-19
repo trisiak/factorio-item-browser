@@ -8,6 +8,7 @@ import Detail from "../common/Detail";
 import DetailsHead from "../common/DetailsHead";
 import RecipeDetails from "./recipe/RecipeDetails";
 import RecipeMachinesList from "./recipe/RecipeMachinesList";
+import TechnologyEntityList from "./technology/TechnologyEntityList";
 
 /**
  * The component representing the details page of a recipe.
@@ -38,6 +39,11 @@ const RecipeDetailsPage: FC = () => {
 
             <RecipeDetails recipe={details.recipe} />
             <RecipeDetails recipe={details.expensiveRecipe} />
+
+            <TechnologyEntityList
+                headline={t("recipe-details.unlocked-by", { count: recipeStore.unlockedByTechnologies.length })}
+                technologies={recipeStore.unlockedByTechnologies}
+            />
 
             <RecipeMachinesList paginatedList={recipeStore.paginatedMachinesList} />
         </Fragment>

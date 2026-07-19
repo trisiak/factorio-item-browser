@@ -63,6 +63,9 @@ export class PackData {
     private readonly technologiesById = new Map<string, FactorioLabItem>();
     private readonly technologyRecipesById = new Map<string, FactorioLabRecipe>();
     private readonly technologyIdsByUnlockedRecipe = new Map<string, string[]>();
+    // Reverse of each technology's `prerequisites`: prerequisite tech id → the technologies
+    // that list it, i.e. the technologies this one unlocks (partial — only direct dependents).
+    private readonly technologyIdsByPrerequisite = new Map<string, string[]>();
 
     public constructor(definition: PackDefinition, data: FactorioLabData) {
         this.definition = definition;
@@ -92,6 +95,9 @@ export class PackData {
                 this.technologiesById.set(item.id, item);
                 for (const recipeId of item.technology?.recipeUnlock || []) {
                     this.push(this.technologyIdsByUnlockedRecipe, recipeId, item.id);
+                }
+                for (const prerequisiteId of item.technology?.prerequisites || []) {
+                    this.push(this.technologyIdsByPrerequisite, prerequisiteId, item.id);
                 }
             }
         }
@@ -303,9 +309,10 @@ export class PackData {
 
     /**
      * Maps a technology item into its full detail: research packs and time (from the paired
-     * same-id technology recipe), prerequisite technologies (for tree traversal) and the
-     * recipes it unlocks. Trigger/free technologies have no paired recipe — their research
-     * cost is empty and their time zero.
+     * same-id technology recipe), prerequisite technologies (for tree traversal), the recipes
+     * it unlocks and the technologies it directly leads to (the reverse of prerequisites).
+     * Trigger/free technologies have no paired recipe — their research cost is empty and their
+     * time zero.
      */
     private buildTechnologyData(technology: FactorioLabItem): TechnologyData {
         const info = technology.technology || {};
@@ -323,12 +330,27 @@ export class PackData {
             prerequisites: (info.prerequisites || []).map((id) => this.technologyRef(id)),
             unlockedRecipes: unlockedRecipes,
             numberOfUnlockedRecipes: unlockedRecipes.length,
+            unlockedTechnologies: (this.technologyIdsByPrerequisite.get(technology.id) || []).map((id) =>
+                this.technologyRef(id),
+            ),
         };
     }
 
     public getTechnology(name: string): TechnologyData | null {
         const technology = this.technologiesById.get(name);
         return technology ? this.buildTechnologyData(technology) : null;
+    }
+
+    /**
+     * The technologies that unlock a given recipe (the reverse of each technology's
+     * `recipeUnlock`). This is the core research connection of a recipe; empty for recipes
+     * available from the start.
+     */
+    public getRecipeResearch(recipeName: string): TechnologyData[] {
+        return (this.technologyIdsByUnlockedRecipe.get(recipeName) || [])
+            .map((id) => this.technologiesById.get(id))
+            .filter((technology): technology is FactorioLabItem => technology !== undefined)
+            .map((technology) => this.buildTechnologyData(technology));
     }
 
     /**

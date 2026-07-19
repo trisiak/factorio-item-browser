@@ -36,6 +36,11 @@ const TechnologyDetailsPage: FC = () => {
                 technologies={technology.prerequisites}
             />
 
+            <TechnologyEntityList
+                headline={t("technology-details.leads-to", { count: technology.unlockedTechnologies.length })}
+                technologies={technology.unlockedTechnologies}
+            />
+
             {technology.numberOfUnlockedRecipes > 0 ? (
                 <Section headline={t("technology-details.unlocks", { count: technology.numberOfUnlockedRecipes })}>
                     <EntityList>

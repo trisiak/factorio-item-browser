@@ -110,7 +110,9 @@
         },
         "products": "Ergebnisse",
         "time": "Zeit",
-        "title": "Rezept: {{label}} - Factorio Item Browser"
+        "title": "Rezept: {{label}} - Factorio Item Browser",
+        "unlocked-by": "Freigeschaltet durch {{count}} Technologie",
+        "unlocked-by_plural": "Freigeschaltet durch {{count}} Technologien"
     },
     "search-results": {
         "headline": "{{count}} Suchergebnis für \"{{query}}\"",
@@ -159,6 +161,8 @@
     },
     "technology-details": {
         "headline": "Technologie: {{label}}",
+        "leads-to": "Führt zu {{count}} Technologie",
+        "leads-to_plural": "Führt zu {{count}} Technologien",
         "prerequisites": "Benötigt Forschung",
         "research": "Forschungskosten",
         "title": "Technologie: {{label}} - Factorio Item Browser",

@@ -250,4 +250,29 @@ test.describe("technology", () => {
         await prerequisite.click();
         await expect(page).toHaveURL(/\/technology\//);
     });
+
+    test("technology page lists the technologies it leads to", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        // Automation is an early tech that other technologies depend on.
+        await page.goto(`/${shortId}/technology/automation`);
+        await expect(page.locator("h1")).toContainText("Automation");
+        const leadsTo = page.locator("section:has(h2:has-text('Leads to')) a[href*='/technology/']").first();
+        await expect(leadsTo).toBeVisible();
+    });
+
+    test("recipe page shows the technology that unlocks it", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        // The electronic-circuit recipe is unlocked by the "Electronics" technology.
+        await page.goto(`/${shortId}/recipe/electronic-circuit`);
+        await expect(page.locator("h2", { hasText: /Unlocked by/i })).toBeVisible();
+
+        const techLink = page.locator("a[href*='/technology/']").first();
+        await expect(techLink).toBeVisible();
+        await techLink.click();
+        await expect(page).toHaveURL(/\/technology\//);
+    });
 });

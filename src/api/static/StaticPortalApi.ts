@@ -250,6 +250,11 @@ export class StaticPortalApi implements PortalApi {
         return details;
     }
 
+    public async getRecipeResearch(name: string): Promise<TechnologyData[]> {
+        const packData = await this.currentPackData();
+        return packData.getRecipeResearch(name);
+    }
+
     public async getRecipeMachines(name: string, page: number): Promise<RecipeMachinesData> {
         const packData = await this.currentPackData();
         const machines = packData.getRecipeMachines(name, page);
