@@ -28,18 +28,23 @@ Keep its checkboxes up to date in the same change that lands work.
   conversion strategy is that stores/components stay interface-compatible
   and are fed through the `portalApi` seam (`src/api/PortalApi.ts`).
 - Preserve the `portalApi` singleton export name and method signatures.
+- **Never change the synthetic combination ids in `src/api/static/packs.ts`.**
+  They scope users' localStorage (sidebar, options, last pack) and appear in
+  shareable URLs — changing one silently wipes user state and breaks links.
+  New packs get new ids; existing ids are forever.
 
 ## Architecture in one paragraph
 
-Every server interaction funnels through the 17 methods of `PortalApi`
+Every data access funnels through the `PortalApi` interface
 (`src/api/PortalApi.ts`), whose request/response shapes live in
-`src/api/transfer.ts`. Icons are CSS classes injected from a generated
+`src/api/transfer.ts`; the static implementation and the pack manifest live
+in `src/api/static/`. Icons are CSS classes injected from a generated
 stylesheet (`src/class/IconManager.ts`). Every URL is prefixed with a
 "combination id" (`src/class/CombinationId.ts`); localStorage caching is
 scoped by it (`src/class/StorageManager.ts`). The static fork keeps all of
-that, mapping packs to **synthetic** combination ids via a bundled manifest,
-and satisfies the API from fetched pack data. `docs/static-fork.md` has the
-full method-by-method mapping.
+that, mapping packs to **synthetic** combination ids via the bundled
+manifest, and satisfies the API from fetched pack data. `docs/static-fork.md`
+has the full method-by-method mapping.
 
 ## Commands
 
@@ -85,6 +90,13 @@ anything user-visible.
 - Prettier + ESLint enforced (CI runs them); match existing style.
 - Routing is router5 (`src/class/Router.ts`); each logical route registers
   short-id / missing-id / long-id variants — don't bypass that helper.
+- The deployed site lives under a path prefix (GitHub Pages project site,
+  `pages.yaml` deploys on master pushes). `BASE_PATH` at build time must stay
+  wired through **all** of: webpack `publicPath`, the `<base>` tag, the
+  router5 `base` option, `Router.buildPath`, and the combination-id sniffing
+  in `GlobalStore` — partial changes break deep links. `404.html` is the SPA
+  fallback and must keep asset/CSS parity with `index.html` (the CSS inliner
+  is filtered to cover both; the e2e suite guards this).
 
 ## Working agreements
 
