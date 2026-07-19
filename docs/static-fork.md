@@ -218,6 +218,19 @@ proposed mitigations:
 4. **Custom exporter browser-artifacts** (descriptions, multi-locale labels)
    only when step 1's FL-format output feels limiting. Park until then.
 
+**Machine "Can craft" list — UI alternatives (parked).** The shipped version
+reuses the paginated recipe list from the item page, so a machine that produces
+hundreds of recipes (an assembler) is bounded by the same "Load more" widget as
+the other lists — fine in practice. Two denser presentations were considered and
+deferred, neither needed yet:
+- **Icon grid** instead of a text list — denser for long lists, but a bigger
+  change: `EntityList`/`Entity` render name + recipe rows, so it wants a compact
+  icon-only entity variant (reusable elsewhere, non-trivial).
+- **Dedicated "show all crafted" route** — the machine page shows a short preview
+  (first page) linking out to a full grid/list, keeping the item page light.
+  Cleanest if a preview-vs-full split is wanted; costs a new route (×3 variants)
+  plus a small store/page.
+
 Housekeeping still pending: GitHub Issues are disabled on this fork — once
 enabled, mirror this checklist into a tracking issue (see CLAUDE.md).
 
