@@ -16,6 +16,20 @@ export type FactorioLabMachine = {
     size?: [number, number];
 };
 
+/**
+ * Technology metadata attached to items in category "technology". `recipeUnlock` lists the
+ * recipe ids the technology unlocks; `prerequisites` lists the technology ids that must be
+ * researched first (both resolve within the same pack). The remaining fields describe
+ * effect/infinite techs and are not consumed here.
+ */
+export type FactorioLabTechnology = {
+    prerequisites?: string[];
+    recipeUnlock?: string[];
+    researchSpeed?: number;
+    miningProductivity?: number;
+    inserterStack?: boolean;
+};
+
 export type FactorioLabItem = {
     id: string;
     name: string;
@@ -25,7 +39,7 @@ export type FactorioLabItem = {
     icon?: string;
     iconText?: string;
     machine?: FactorioLabMachine;
-    technology?: unknown;
+    technology?: FactorioLabTechnology;
 };
 
 export type FactorioLabRecipe = {

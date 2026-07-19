@@ -7,6 +7,7 @@ import CopyTemplate from "../common/CopyTemplate";
 import Detail from "../common/Detail";
 import DetailsHead from "../common/DetailsHead";
 import ItemRecipesList from "./item/ItemRecipesList";
+import TechnologyEntityList from "./technology/TechnologyEntityList";
 
 /**
  * The component representing the item and fluid details page.
@@ -41,6 +42,11 @@ const ItemDetailsPage: FC = () => {
                     />
                 </Detail>
             </DetailsHead>
+
+            <TechnologyEntityList
+                headline={t("item-details.unlocked-by", { count: itemStore.unlockedByTechnologies.length })}
+                technologies={itemStore.unlockedByTechnologies}
+            />
 
             <ItemRecipesList
                 paginatedList={itemStore.paginatedProductRecipesList}

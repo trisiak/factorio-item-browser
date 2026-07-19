@@ -90,6 +90,31 @@ export type RecipeItemData = {
 
 export type RecipeMachinesData = ResultsData<MachineData>;
 
+export type TechnologyMetaData = {
+    name: string;
+    label: string;
+};
+
+export type TechnologyData = {
+    name: string;
+    label: string;
+    /** Research time per unit, in seconds. The data source carries no research-unit count. */
+    researchTime: number;
+    /** The science packs the research consumes; empty for trigger/free technologies. */
+    ingredients: RecipeItemData[];
+    prerequisites: TechnologyMetaData[];
+    unlockedRecipes: EntityData[];
+    numberOfUnlockedRecipes: number;
+};
+
+export type ItemResearchData = {
+    type: ItemType;
+    name: string;
+    label: string;
+    /** The technologies that unlock a recipe producing this item; empty if start-available. */
+    technologies: TechnologyData[];
+};
+
 export type SearchResultsData = ResultsData<EntityData> & {
     query: string;
 };

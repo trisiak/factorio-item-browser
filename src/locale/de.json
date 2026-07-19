@@ -4,7 +4,8 @@
         "fluid": "Flüssigkeit",
         "item": "Item",
         "machine": "Maschine",
-        "recipe": "Rezept"
+        "recipe": "Rezept",
+        "technology": "Technologie"
     },
     "copy-template": {
         "rich-text-icon": {
@@ -80,7 +81,9 @@
         "title": {
             "item": "Item: {{label}} - Factorio Item Browser",
             "fluid": "Flüssigkeit: {{label}} - Factorio Item Browser"
-        }
+        },
+        "unlocked-by": "Freigeschaltet durch {{count}} Technologie",
+        "unlocked-by_plural": "Freigeschaltet durch {{count}} Technologien"
     },
     "item-list": {
         "headline": "Alle {{count}} Items and Flüssigkeiten",
@@ -153,5 +156,13 @@
         "headline-last-viewed": "Zuletzt angesehen",
         "headline-pinned": "Angeheftet",
         "setting": "Einstellung: {{name}}"
+    },
+    "technology-details": {
+        "headline": "Technologie: {{label}}",
+        "prerequisites": "Benötigt Forschung",
+        "research": "Forschungskosten",
+        "title": "Technologie: {{label}} - Factorio Item Browser",
+        "unlocks": "Schaltet {{count}} Rezept frei",
+        "unlocks_plural": "Schaltet {{count}} Rezepte frei"
     }
 }

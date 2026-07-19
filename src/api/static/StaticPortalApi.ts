@@ -11,6 +11,7 @@ import {
     InitData,
     ItemListData,
     ItemRecipesData,
+    ItemResearchData,
     ItemType,
     ModData,
     RecipeDetailsData,
@@ -19,6 +20,7 @@ import {
     SettingData,
     SettingOptionsData,
     SidebarEntityData,
+    TechnologyData,
 } from "../transfer";
 import { PackData, ResolvedIcon } from "./PackData";
 import { FactorioLabData } from "./factoriolab";
@@ -209,6 +211,24 @@ export class StaticPortalApi implements PortalApi {
             throw new PageNotFoundError(`The item "${type}/${name}" is not known in this pack.`);
         }
         return packData.getItemRecipes(item, side, page);
+    }
+
+    public async getItemResearch(type: ItemType, name: string): Promise<ItemResearchData> {
+        const packData = await this.currentPackData();
+        const item = packData.getItem(type, name);
+        if (!item) {
+            throw new PageNotFoundError(`The item "${type}/${name}" is not known in this pack.`);
+        }
+        return packData.getItemResearch(item);
+    }
+
+    public async getTechnology(name: string): Promise<TechnologyData> {
+        const packData = await this.currentPackData();
+        const technology = packData.getTechnology(name);
+        if (!technology) {
+            throw new PageNotFoundError(`The technology "${name}" is not known in this pack.`);
+        }
+        return technology;
     }
 
     public async getItemList(page: number): Promise<ItemListData> {

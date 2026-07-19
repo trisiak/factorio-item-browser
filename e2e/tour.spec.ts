@@ -90,6 +90,32 @@ test.describe("visual tour — desktop", () => {
         await shot(page, testInfo, "desktop-vanilla-item-detail");
     });
 
+    test("vanilla: item detail 'unlocked by' technology", async ({ page }, testInfo) => {
+        await gotoItemList(page, PACKS.vanilla);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        // Electronic circuit is unlocked by the "Electronics" technology in vanilla.
+        await page.goto(`/${shortId}/item/electronic-circuit`);
+        await expect(page.locator("h2", { hasText: /Unlocked by/i })).toBeVisible();
+        await expect(page.locator("a[href*='/technology/']").first()).toBeVisible();
+        await waitForIcons(page);
+        await shot(page, testInfo, "desktop-vanilla-item-unlocked-by");
+    });
+
+    test("vanilla: technology detail with cost, prerequisites and unlocks", async ({ page }, testInfo) => {
+        await gotoItemList(page, PACKS.vanilla);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        // Automation 2 shows all three sections: research cost, prerequisite
+        // technologies (traversable) and the recipes it unlocks.
+        await page.goto(`/${shortId}/technology/automation-2`);
+        await expect(page.locator("h1")).toContainText("Automation 2");
+        await expect(page.locator("h2", { hasText: "Research cost" })).toBeVisible();
+        await expect(page.locator("h2", { hasText: /Requires researching/i })).toBeVisible();
+        await waitForIcons(page);
+        await shot(page, testInfo, "desktop-vanilla-technology-detail");
+    });
+
     test("vanilla: recipe detail with producing machines", async ({ page }, testInfo) => {
         await gotoItemList(page, PACKS.vanilla);
         const shortId = (page.url().match(SHORT_ID) || [""])[0];
@@ -182,5 +208,28 @@ test.describe("visual tour — mobile", () => {
         await page.goto(`/${shortId}/recipe/electronic-circuit`);
         await expect(page.locator(".recipe-details").first()).toBeVisible();
         await shot(page, testInfo, "mobile-recipe-detail");
+    });
+
+    test("item detail 'unlocked by' technology", async ({ page }, testInfo) => {
+        await gotoItemList(page, PACKS.vanilla);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        await page.goto(`/${shortId}/item/electronic-circuit`);
+        await expect(page.locator("h2", { hasText: /Unlocked by/i })).toBeVisible();
+        await expect(page.locator("a[href*='/technology/']").first()).toBeVisible();
+        await waitForIcons(page);
+        await shot(page, testInfo, "mobile-item-unlocked-by");
+    });
+
+    test("technology detail with cost, prerequisites and unlocks", async ({ page }, testInfo) => {
+        await gotoItemList(page, PACKS.vanilla);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        await page.goto(`/${shortId}/technology/automation-2`);
+        await expect(page.locator("h1")).toContainText("Automation 2");
+        await expect(page.locator("h2", { hasText: "Research cost" })).toBeVisible();
+        await expect(page.locator("h2", { hasText: /Requires researching/i })).toBeVisible();
+        await waitForIcons(page);
+        await shot(page, testInfo, "mobile-technology-detail");
     });
 });

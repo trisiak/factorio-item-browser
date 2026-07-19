@@ -215,3 +215,39 @@ test.describe("mobile viewport (phone)", () => {
         await expect(page.locator(".recipe-item-separator")).toHaveCount(0);
     });
 });
+
+test.describe("technology", () => {
+    test("item links to its unlocking technology, whose page is traversable", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        // Electronic circuit is unlocked by the "Electronics" technology in vanilla.
+        await page.goto(`/${shortId}/item/electronic-circuit`);
+        await expect(page.locator("h2", { hasText: /Unlocked by/i })).toBeVisible();
+
+        const techLink = page.locator("a[href*='/technology/']").first();
+        await expect(techLink).toBeVisible();
+        await techLink.click();
+
+        await expect(page).toHaveURL(/\/technology\//);
+        await expect(page.locator("h1")).toContainText(/Technology:/);
+    });
+
+    test("a mid-tree technology shows research cost and clickable prerequisites", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        await page.goto(`/${shortId}/technology/automation-2`);
+        await expect(page.locator("h1")).toContainText("Automation 2");
+
+        // Research cost lists the science packs as recipe items with amounts.
+        await expect(page.locator("h2", { hasText: "Research cost" })).toBeVisible();
+        await expect(page.locator(".recipe-item-list .recipe-item").first()).toBeVisible();
+
+        // Prerequisites are themselves technology links, so the tree can be walked.
+        const prerequisite = page.locator("section a[href*='/technology/']").first();
+        await expect(prerequisite).toBeVisible();
+        await prerequisite.click();
+        await expect(page).toHaveURL(/\/technology\//);
+    });
+});

@@ -35,6 +35,14 @@ const fixture: FactorioLabData = {
             row: 3,
             technology: {},
         },
+        { id: "science-pack", name: "Science pack", category: "science", row: 4 },
+        {
+            id: "mining-tech",
+            name: "Mining technology",
+            category: "technology",
+            row: 4,
+            technology: { recipeUnlock: ["doubler-recipe"], prerequisites: ["widget-tech"] },
+        },
     ],
     recipes: [
         {
@@ -68,12 +76,24 @@ const fixture: FactorioLabData = {
             out: { "widget-tech": 1 },
             flags: ["technology"],
         },
+        {
+            id: "mining-tech",
+            name: "Mining technology",
+            category: "technology",
+            row: 4,
+            time: 10,
+            producers: ["lab"],
+            in: { "science-pack": 3 },
+            out: { "mining-tech": 1 },
+            flags: ["technology"],
+        },
     ],
     icons: [
         { id: "widget", x: 0, y: 0 },
         { id: "gizmo", x: 66, y: 0 },
         { id: "goo", x: 0, y: 66 },
         { id: "assembler", x: 132, y: 0 },
+        { id: "mining-tech", x: 132, y: 66 },
     ],
 };
 
@@ -213,6 +233,74 @@ describe("StaticPortalApi", (): void => {
 
         expect(data.numberOfResults).toBe(0);
         expect(data.results).toEqual([]);
+    });
+
+    test("getTechnology exposes research packs, time, prerequisites and unlocked recipes", async (): Promise<void> => {
+        const technology = await api.getTechnology("mining-tech");
+
+        expect(technology.name).toBe("mining-tech");
+        expect(technology.label).toBe("Mining technology");
+        expect(technology.researchTime).toBe(10);
+        expect(technology.ingredients).toEqual([
+            { type: "item", name: "science-pack", label: "Science pack", amount: 3 },
+        ]);
+        expect(technology.prerequisites).toEqual([{ name: "widget-tech", label: "Widget technology" }]);
+        expect(technology.unlockedRecipes.map((entity) => entity.name)).toEqual(["doubler-recipe"]);
+        expect(technology.numberOfUnlockedRecipes).toBe(1);
+    });
+
+    test("getTechnology reports trigger technologies with no research cost", async (): Promise<void> => {
+        // widget-tech has an empty technology object (no paired cost recipe by its id).
+        const technology = await api.getTechnology("widget-tech");
+
+        expect(technology.researchTime).toBe(0);
+        expect(technology.ingredients).toEqual([]);
+        expect(technology.prerequisites).toEqual([]);
+        expect(technology.unlockedRecipes).toEqual([]);
+    });
+
+    test("getTechnology rejects unknown technologies", async (): Promise<void> => {
+        await expect(api.getTechnology("nope")).rejects.toBeInstanceOf(PageNotFoundError);
+    });
+
+    test("getItemResearch lists the technologies unlocking an item", async (): Promise<void> => {
+        const research = await api.getItemResearch("item", "doubler-a");
+
+        expect(research.type).toBe("item");
+        expect(research.label).toBe("Doubler");
+        expect(research.technologies.map((technology) => technology.name)).toEqual(["mining-tech"]);
+        expect(research.technologies[0].ingredients[0].name).toBe("science-pack");
+    });
+
+    test("getItemResearch is empty for start-available items", async (): Promise<void> => {
+        const research = await api.getItemResearch("item", "gizmo");
+
+        expect(research.technologies).toEqual([]);
+    });
+
+    test("getTooltip represents a technology by the recipes it unlocks", async (): Promise<void> => {
+        const entity = await api.getTooltip("technology", "mining-tech");
+
+        expect(entity.type).toBe("technology");
+        expect(entity.label).toBe("Mining technology");
+        expect(entity.numberOfRecipes).toBe(1);
+        expect(entity.recipes[0].products[0].name).toBe("doubler-a");
+    });
+
+    test("getIconsStyle resolves technology icons from their own namespace", async (): Promise<void> => {
+        const result = await api.getIconsStyle({
+            cssSelector: ".icon-{type}-{name}",
+            entities: { technology: ["mining-tech"] },
+        });
+
+        expect(result.processedEntities).toEqual({ technology: ["mining-tech"] });
+        expect(result.style).toContain(".icon-technology-mining-tech{");
+    });
+
+    test("getItemResearch rejects unknown items and keeps technologies out of the item namespace", async (): Promise<void> => {
+        await expect(api.getItemResearch("item", "nope")).rejects.toBeInstanceOf(PageNotFoundError);
+        // A technology id is not addressable as an item.
+        await expect(api.getItemResearch("item", "mining-tech")).rejects.toBeInstanceOf(PageNotFoundError);
     });
 
     test("getRecipeDetails maps the recipe", async (): Promise<void> => {

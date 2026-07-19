@@ -3,7 +3,7 @@ import { createContext } from "react";
 import { State } from "router5";
 import { PortalApi, portalApi } from "../api/PortalApi";
 import { emptyItemRecipesData } from "../api/empty";
-import { EntityData, ItemRecipesData, ItemType } from "../api/transfer";
+import { EntityData, ItemRecipesData, ItemType, TechnologyData } from "../api/transfer";
 import { PaginatedList } from "../class/PaginatedList";
 import { router, Router } from "../class/Router";
 import { RouteName } from "../util/const";
@@ -37,6 +37,8 @@ export class ItemStore {
     public paginatedProductRecipesList: PaginatedList<EntityData, ItemRecipesData> | null = null;
     /** The paginated list of recipes the item can craft (only populated for machines). */
     public paginatedMachineRecipesList: PaginatedList<EntityData, ItemRecipesData> | null = null;
+    /** The technologies that unlock a recipe producing the item; empty if start-available. */
+    public unlockedByTechnologies: TechnologyData[] = [];
 
     public constructor(errorStore: ErrorStore, portalApi: PortalApi, router: Router, sidebarStore: SidebarStore) {
         this.errorStore = errorStore;
@@ -48,6 +50,7 @@ export class ItemStore {
             paginatedIngredientRecipesList: observable,
             paginatedProductRecipesList: observable,
             paginatedMachineRecipesList: observable,
+            unlockedByTechnologies: observable,
             handleRouteChange: action,
         });
 
@@ -72,10 +75,18 @@ export class ItemStore {
             this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
         );
 
-        const [productsData] = await Promise.all([
+        // The research lookup is best-effort: a failure (or a data source without technology
+        // data) must not break the item page, so it falls back to an empty list.
+        const researchPromise = this.portalApi
+            .getItemResearch(type, name)
+            .then((research) => research.technologies)
+            .catch(() => []);
+
+        const [productsData, , , technologies] = await Promise.all([
             newProductsList.requestNextPage(),
             newIngredientsList.requestNextPage(),
             newMachineRecipesList.requestNextPage(),
+            researchPromise,
         ]);
 
         if (productsData.name !== "") {
@@ -83,6 +94,7 @@ export class ItemStore {
                 this.paginatedProductRecipesList = newProductsList;
                 this.paginatedIngredientRecipesList = newIngredientsList;
                 this.paginatedMachineRecipesList = newMachineRecipesList;
+                this.unlockedByTechnologies = technologies;
 
                 this.item = {
                     type: productsData.type,

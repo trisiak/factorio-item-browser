@@ -2,10 +2,12 @@ import { RecipeMode, SettingStatus } from "../util/const";
 import {
     ItemListData,
     ItemRecipesData,
+    ItemResearchData,
     RecipeDetailsData,
     RecipeMachinesData,
     SearchResultsData,
     SettingData,
+    TechnologyData,
 } from "./transfer";
 
 export const emptyItemListData: ItemListData = {
@@ -31,6 +33,23 @@ export const emptyRecipeDetailsData: RecipeDetailsData = {
 export const emptyRecipeMachinesData: RecipeMachinesData = {
     results: [],
     numberOfResults: 0,
+};
+
+export const emptyTechnologyData: TechnologyData = {
+    name: "",
+    label: "",
+    researchTime: 0,
+    ingredients: [],
+    prerequisites: [],
+    unlockedRecipes: [],
+    numberOfUnlockedRecipes: 0,
+};
+
+export const emptyItemResearchData: ItemResearchData = {
+    type: "item",
+    name: "",
+    label: "",
+    technologies: [],
 };
 
 export const emptySearchResultsData: SearchResultsData = {

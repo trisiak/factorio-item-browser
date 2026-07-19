@@ -8,6 +8,7 @@ import {
     InitData,
     ItemListData,
     ItemRecipesData,
+    ItemResearchData,
     ItemType,
     ModData,
     RecipeDetailsData,
@@ -16,6 +17,7 @@ import {
     SettingData,
     SettingOptionsData,
     SidebarEntityData,
+    TechnologyData,
 } from "./transfer";
 
 /**
@@ -33,6 +35,8 @@ export interface PortalApi {
     getItemIngredientRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
     getItemProductRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
     getMachineRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
+    getItemResearch(type: ItemType, name: string): Promise<ItemResearchData>;
+    getTechnology(name: string): Promise<TechnologyData>;
     getItemList(page: number): Promise<ItemListData>;
     getRandom(): Promise<EntityData[]>;
     getRecipeDetails(name: string): Promise<RecipeDetailsData>;
