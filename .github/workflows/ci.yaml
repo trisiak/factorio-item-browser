@@ -117,8 +117,12 @@ jobs:
       - name: Run Playwright tests
         run: npm run test:e2e
 
+      # Always upload — the report embeds an end-of-test screenshot for every test
+      # (screenshot: "on" in playwright.config.js), so it's a visual gallery of the
+      # rendered UI on green runs too, not just a failure trace. Download + open
+      # playwright-report/index.html to inspect.
       - name: Upload Playwright report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

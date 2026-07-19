@@ -104,7 +104,8 @@
     "test-eslint": "eslint src --ext ts,tsx",
     "test-jest": "jest",
     "test-tsc": "tsc",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:tour": "playwright test --project=tour"
   },
   "browserslist": [
     ">1%"

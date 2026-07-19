@@ -150,6 +150,21 @@ to numbers.
   localStorage (`staticLastPack`), so id-less visits (bare `/`) resolve to
   the last browsed pack instead of always reverting to the default.
 
+  **Visual inspection.** On CI the functional suite runs with
+  `screenshot: "on"`, and the `E2E (Playwright)` job uploads the Playwright
+  HTML report as an artifact on *every* run (not just failures) — the report
+  embeds an end-of-test screenshot per test, so it doubles as a visual gallery
+  of the rendered UI. Download `playwright-report` from the run and open
+  `index.html` to inspect. For a deliberate, curated walk of the key surfaces
+  (item list / detail / recipe / search / settings across Vanilla, Space Age
+  and Space Exploration, plus the mobile header/drawer/search/recipe states),
+  the opt-in **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`)
+  writes full-page screenshots to `./screenshots` (gitignored) and attaches
+  them to the report. The tour is a separate Playwright project, kept out of
+  the default `npm run test:e2e` and the push-triggered CI job — run it on
+  demand when a change needs visual review before deploy. Screenshots contain
+  game-derived icons/data and must never be committed.
+
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
 Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp
