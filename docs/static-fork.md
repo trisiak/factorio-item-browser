@@ -193,6 +193,41 @@ proposed mitigations:
    quirks above, is the real reason the custom exporter will eventually be
    worth it.
 
+## Next steps (roadmap, in leverage order)
+
+1. **Exact packs without the custom exporter (the cheap big win).**
+   FactorioLab's export pipeline is an MIT-licensed Factorio *mod*
+   ([`factoriolab/factoriolab-export`](https://github.com/factoriolab/factoriolab-export)):
+   load the exact mod set (e.g. the fbe fork's SE 0.7.56 on Factorio 2.0.76)
+   in a local Factorio and it dumps `data.json` + `icons.png` in exactly the
+   format this app already consumes. Host the two files anywhere with CORS
+   (the fbe fork's Pages data dir, or the future data repo — never this
+   repo), and it's **one new entry in `src/api/static/packs.ts`, zero code
+   changes**. Closes the sxp version-basis gap (quirk #6). Descriptions
+   remain out of reach (the FL schema has none).
+2. **More ready-made FactorioLab packs** are one manifest entry away if ever
+   wanted: `kr2` (Krastorio 2), `kr2sxp`, `sea` (Sea Block), `pys`
+   (Pyanodons), `bobang`, `ir3`, `nls`, vanilla `1.1`, and more — see
+   `factoriolab/factoriolab` `src/data/datasets.ts` for the registry.
+3. **Data plane (fbe-side, resolves fbe issue #8).** Evict `data/output/`
+   from the fbe repo into a dedicated data repo with its own Pages deploy;
+   fbe consumes via `VITE_DATA_URL` (proven by its PR previews); the packs
+   from step 1 live on the same host. Cross-link the two repos' docs — fbe's
+   currently don't mention this fork at all.
+4. **Custom exporter browser-artifacts** (descriptions, multi-locale labels)
+   only when step 1's FL-format output feels limiting. Park until then.
+
+Housekeeping still pending: GitHub Issues are disabled on this fork — once
+enabled, mirror this checklist into a tracking issue (see CLAUDE.md).
+
+**Per-PR previews (evaluated, not planned):** fbe's `pr-preview/pr-N/`
+pattern relies on branch-based Pages deployment (directories coexist on the
+`gh-pages` branch). This repo deploys via the "GitHub Actions" source, where
+each deployment replaces the whole site — previews would require switching
+to branch-based deploys plus a per-PR `BASE_PATH`. Skipped for now: builds
+are ~10 s and the e2e suite already exercises the deployed shape (subpath +
+404 fallback) on every push.
+
 ## Bigger picture
 
 The companion fork [`trisiak/factorio-blueprint-editor`](https://github.com/trisiak/factorio-blueprint-editor)
