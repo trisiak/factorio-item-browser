@@ -32,6 +32,7 @@ export interface PortalApi {
     initializeSession(): Promise<InitData>;
     getItemIngredientRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
     getItemProductRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
+    getMachineRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData>;
     getItemList(page: number): Promise<ItemListData>;
     getRandom(): Promise<EntityData[]>;
     getRecipeDetails(name: string): Promise<RecipeDetailsData>;

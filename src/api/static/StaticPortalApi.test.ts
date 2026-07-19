@@ -198,6 +198,23 @@ describe("StaticPortalApi", (): void => {
         await expect(api.getItemIngredientRecipes("item", "nope", 1)).rejects.toBeInstanceOf(PageNotFoundError);
     });
 
+    test("getMachineRecipes lists the recipes a machine can craft", async (): Promise<void> => {
+        const data = await api.getMachineRecipes("item", "assembler", 1);
+
+        expect(data.label).toBe("Assembler");
+        // Both non-technology recipes name the assembler as a producer; the technology
+        // recipe (producer "lab") is filtered out.
+        expect(data.numberOfResults).toBe(2);
+        expect(data.results.map((entity) => entity.name).sort()).toEqual(["doubler-recipe", "gizmo-recipe"]);
+    });
+
+    test("getMachineRecipes is empty for non-machine items", async (): Promise<void> => {
+        const data = await api.getMachineRecipes("item", "widget", 1);
+
+        expect(data.numberOfResults).toBe(0);
+        expect(data.results).toEqual([]);
+    });
+
     test("getRecipeDetails maps the recipe", async (): Promise<void> => {
         const details = await api.getRecipeDetails("gizmo-recipe");
 

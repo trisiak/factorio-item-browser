@@ -50,6 +50,10 @@ const ItemDetailsPage: FC = () => {
                 paginatedList={itemStore.paginatedIngredientRecipesList}
                 headlineLocaleKey={"item-details.ingredient-in"}
             />
+            <ItemRecipesList
+                paginatedList={itemStore.paginatedMachineRecipesList}
+                headlineLocaleKey={"item-details.can-craft"}
+            />
         </Fragment>
     );
 };

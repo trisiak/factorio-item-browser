@@ -193,10 +193,14 @@ export class StaticPortalApi implements PortalApi {
         return this.getItemRecipes(type, name, "product", page);
     }
 
+    public async getMachineRecipes(type: ItemType, name: string, page: number): Promise<ItemRecipesData> {
+        return this.getItemRecipes(type, name, "producer", page);
+    }
+
     private async getItemRecipes(
         type: ItemType,
         name: string,
-        side: "ingredient" | "product",
+        side: "ingredient" | "product" | "producer",
         page: number,
     ): Promise<ItemRecipesData> {
         const packData = await this.currentPackData();

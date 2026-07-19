@@ -35,6 +35,8 @@ export class ItemStore {
     public paginatedIngredientRecipesList: PaginatedList<EntityData, ItemRecipesData> | null = null;
     /** The paginated list of recipes having the item as product. */
     public paginatedProductRecipesList: PaginatedList<EntityData, ItemRecipesData> | null = null;
+    /** The paginated list of recipes the item can craft (only populated for machines). */
+    public paginatedMachineRecipesList: PaginatedList<EntityData, ItemRecipesData> | null = null;
 
     public constructor(errorStore: ErrorStore, portalApi: PortalApi, router: Router, sidebarStore: SidebarStore) {
         this.errorStore = errorStore;
@@ -45,6 +47,7 @@ export class ItemStore {
             item: observable,
             paginatedIngredientRecipesList: observable,
             paginatedProductRecipesList: observable,
+            paginatedMachineRecipesList: observable,
             handleRouteChange: action,
         });
 
@@ -62,16 +65,24 @@ export class ItemStore {
             (page) => this.portalApi.getItemIngredientRecipes(type, name, page),
             this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
         );
+        // Populated for every item; only machines produce a non-empty list, so the section
+        // hides itself for everything else (see ItemRecipesList).
+        const newMachineRecipesList = new PaginatedList<EntityData, ItemRecipesData>(
+            (page) => this.portalApi.getMachineRecipes(type, name, page),
+            this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
+        );
 
         const [productsData] = await Promise.all([
             newProductsList.requestNextPage(),
             newIngredientsList.requestNextPage(),
+            newMachineRecipesList.requestNextPage(),
         ]);
 
         if (productsData.name !== "") {
             runInAction(() => {
                 this.paginatedProductRecipesList = newProductsList;
                 this.paginatedIngredientRecipesList = newIngredientsList;
+                this.paginatedMachineRecipesList = newMachineRecipesList;
 
                 this.item = {
                     type: productsData.type,
