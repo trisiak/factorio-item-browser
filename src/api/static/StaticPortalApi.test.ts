@@ -93,6 +93,7 @@ const fixture: FactorioLabData = {
         { id: "gizmo", x: 66, y: 0 },
         { id: "goo", x: 0, y: 66 },
         { id: "assembler", x: 132, y: 0 },
+        { id: "mining-tech", x: 132, y: 66 },
     ],
 };
 
@@ -275,6 +276,25 @@ describe("StaticPortalApi", (): void => {
         const research = await api.getItemResearch("item", "gizmo");
 
         expect(research.technologies).toEqual([]);
+    });
+
+    test("getTooltip represents a technology by the recipes it unlocks", async (): Promise<void> => {
+        const entity = await api.getTooltip("technology", "mining-tech");
+
+        expect(entity.type).toBe("technology");
+        expect(entity.label).toBe("Mining technology");
+        expect(entity.numberOfRecipes).toBe(1);
+        expect(entity.recipes[0].products[0].name).toBe("doubler-a");
+    });
+
+    test("getIconsStyle resolves technology icons from their own namespace", async (): Promise<void> => {
+        const result = await api.getIconsStyle({
+            cssSelector: ".icon-{type}-{name}",
+            entities: { technology: ["mining-tech"] },
+        });
+
+        expect(result.processedEntities).toEqual({ technology: ["mining-tech"] });
+        expect(result.style).toContain(".icon-technology-mining-tech{");
     });
 
     test("getItemResearch rejects unknown items and keeps technologies out of the item namespace", async (): Promise<void> => {

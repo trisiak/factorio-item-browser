@@ -133,13 +133,34 @@ should mirror this checklist and the two must stay reconciled.
   unlocked by several technologies. **Accepted gap:** FactorioLab carries no
   research-unit count — only the per-unit science-pack set and time — so we
   expose *which* packs (and their ratio), not a "×N units" total.
-- [ ] **Phase 6b — technology browsing UI.** Not started. Render "unlocked by
-  &lt;tech&gt;" on the item page (the tech icon clickable), a technology detail
-  page (science packs, research time, prerequisites, unlocked recipes/items),
-  and prerequisite links so the tech tree is traversable. Technology becomes a
-  first-class browsable entity (`type: "technology"`) reachable from items but
-  never listed in the "all items" grid. Needs a route + store + components and
-  a technology icon-resolution path (technology items carry their own `icon`).
+- [x] **Phase 6b — technology browsing UI.** Technology is now a first-class
+  browsable entity (`type: "technology"`) reachable from items but never listed
+  in the "all items" grid. The item page carries an "Unlocked by" section
+  (`ItemStore` best-effort fetches `getItemResearch`, rendered above the recipe
+  lists via a reusable `TechnologyEntityList`); each entry is a clickable
+  technology icon+label. A new `/technology/:name` route (`RouteName`,
+  `util/route.ts` entity mapping, `TechnologyStore` modelled on `RecipeStore`,
+  registered in `App.tsx`) renders `TechnologyDetailsPage`: research cost
+  (science packs + research time, reusing the recipe-item primitives),
+  "Requires researching" (prerequisite technologies as clickable boxes — the
+  tree is traversable), and "Unlocks N recipes". Technology icons resolve
+  through their own namespace (`PackData.getIconRect` type `technology`, using
+  the tech item's own `icon`), and hovering a technology (sidebar) shows the
+  recipes it unlocks (`getEntity` type `technology`). Locale keys added to
+  en/de (`technology-details.*`, `item-details.unlocked-by`,
+  `box-label.technology`); `IconStore` highlights the active technology in the
+  sidebar. Verified against live FactorioLab data (unit + e2e): item →
+  "Unlocked by" → technology page → clickable prerequisite → next technology,
+  research packs/time render, start-available items (e.g. iron ore) show no
+  "Unlocked by".
+- [ ] **Phase 6c — technology UX + top-level browse (pending evaluation).**
+  Open questions to settle after living with 6b: whether "Unlocked by" on every
+  item page is too much clutter and wants a lighter treatment (inline chip,
+  collapsed, or moved), and an "All technologies" top-level page mirroring "All
+  items" (icon grid) — would need a `getTechnologyList` data-layer method plus
+  an `ItemList`-style page/route. A technology tooltip on the item/prereq boxes
+  (currently only the sidebar hover resolves one) and a `[technology=…]` rich
+  copy template are smaller follow-ups.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

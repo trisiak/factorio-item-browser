@@ -4,7 +4,8 @@
         "fluid": "fluid",
         "item": "item",
         "machine": "machine",
-        "recipe": "recipe"
+        "recipe": "recipe",
+        "technology": "technology"
     },
     "copy-template": {
         "rich-text-icon": {
@@ -80,7 +81,9 @@
         "title": {
             "item": "Item: {{label}} - Factorio Item Browser",
             "fluid": "Fluid: {{label}} - Factorio Item Browser"
-        }
+        },
+        "unlocked-by": "Unlocked by {{count}} technology",
+        "unlocked-by_plural": "Unlocked by {{count}} technologies"
     },
     "item-list": {
         "headline": "All {{count}} items and fluids",
@@ -153,5 +156,13 @@
         "headline-last-viewed": "Last viewed",
         "headline-pinned": "Pinned",
         "setting": "Setting: {{name}}"
+    },
+    "technology-details": {
+        "headline": "Technology: {{label}}",
+        "prerequisites": "Requires researching",
+        "research": "Research cost",
+        "title": "Technology: {{label}} - Factorio Item Browser",
+        "unlocks": "Unlocks {{count}} recipe",
+        "unlocks_plural": "Unlocks {{count}} recipes"
     }
 }

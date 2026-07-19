@@ -4,6 +4,7 @@ const entityTypeToRouteNameMap: { [key: string]: RouteName } = {
     item: RouteName.ItemDetails,
     fluid: RouteName.ItemDetails,
     recipe: RouteName.RecipeDetails,
+    technology: RouteName.TechnologyDetails,
 };
 
 type RouteAndParams = {

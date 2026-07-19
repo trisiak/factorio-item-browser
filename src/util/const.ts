@@ -19,6 +19,7 @@ export enum RouteName {
     RecipeDetails = "recipeDetails",
     Search = "search",
     Settings = "settings",
+    TechnologyDetails = "technologyDetails",
 }
 
 export enum SettingStatus {

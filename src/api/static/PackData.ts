@@ -364,6 +364,25 @@ export class PackData {
             return recipe ? this.buildRecipeEntity(recipe) : null;
         }
 
+        if (type === "technology") {
+            const technology = this.technologiesById.get(name);
+            if (!technology) {
+                return null;
+            }
+            // Represent the technology by the recipes it unlocks, so its tooltip and cards
+            // show what researching it grants.
+            const data = this.buildTechnologyData(technology);
+            return {
+                type: "technology",
+                name: data.name,
+                label: data.label,
+                recipes: data.unlockedRecipes
+                    .slice(0, Config.numberOfRecipesPerEntity)
+                    .map((entity) => entity.recipes[0]),
+                numberOfRecipes: data.numberOfUnlockedRecipes,
+            };
+        }
+
         const item = this.getItem(type, name);
         return item ? this.buildItemEntity(item) : null;
     }
@@ -416,9 +435,21 @@ export class PackData {
      * Resolves the spritesheet position of an entity's icon (plus its overlay text, e.g.
      * steam temperatures), or null if the entity (or its icon) is unknown. Items, fluids
      * and machines share the item namespace; recipes may point at another icon via their
-     * icon field (as items may, too).
+     * icon field (as items may, too). Technologies live in their own namespace and carry
+     * their own icon field.
      */
     public getIconRect(type: string, name: string): ResolvedIcon | null {
+        if (type === "technology") {
+            const technology = this.technologiesById.get(name);
+            if (technology) {
+                const icon = this.iconsById.get(technology.icon ?? technology.id);
+                if (icon) {
+                    return { icon, text: technology.iconText };
+                }
+            }
+            return null;
+        }
+
         if (type === "recipe") {
             const recipe = this.recipesById.get(name);
             if (recipe) {

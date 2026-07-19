@@ -43,6 +43,13 @@ export class IconStore {
                 };
                 break;
 
+            case RouteName.TechnologyDetails:
+                this.highlightedEntity = {
+                    type: "technology",
+                    name: state.params.name,
+                };
+                break;
+
             default:
                 this.highlightedEntity = emptyEntity;
                 break;
