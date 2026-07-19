@@ -29,10 +29,14 @@ const PACKS = {
 
 const SCREENSHOT_DIR = path.join(process.cwd(), "screenshots");
 
-/** Capture a full-page screenshot to ./screenshots and attach it to the HTML report. */
-async function shot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+/**
+ * Capture a screenshot to ./screenshots and attach it to the HTML report. Full-page by
+ * default; pass fullPage: false for fixed overlays (e.g. the off-canvas drawer) that a
+ * full-page capture would stretch across the whole scrollable document.
+ */
+async function shot(page: Page, testInfo: TestInfo, name: string, { fullPage = true } = {}): Promise<void> {
     const file = path.join(SCREENSHOT_DIR, `${name}.png`);
-    const buffer = await page.screenshot({ path: file, fullPage: true });
+    const buffer = await page.screenshot({ path: file, fullPage });
     await testInfo.attach(name, { body: buffer, contentType: "image/png" });
 }
 
@@ -46,18 +50,24 @@ async function gotoItemList(page: Page, packId: string): Promise<void> {
 /**
  * Wait until the async icon CSS has been injected, so item icons are actually painted
  * in the screenshot rather than showing as blank tiles.
+ *
+ * The spritesheet background lives on different elements depending on the layout: the
+ * item list paints it directly on the `<a href="/item/…">` tile, while entity boxes
+ * (search results, detail pages) paint it on a child `<div class="icon …">`. Poll for
+ * any element carrying it so this works across every surface in the tour.
  */
 async function waitForIcons(page: Page): Promise<void> {
     await expect
         .poll(
             () =>
-                page
-                    .locator("a[href*='/item/']")
-                    .first()
-                    .evaluate((el) => getComputedStyle(el).backgroundImage),
+                page.evaluate(() =>
+                    Array.from(document.querySelectorAll("a[href*='/item/'], a[href*='/fluid/'], .icon")).some((el) =>
+                        getComputedStyle(el).backgroundImage.includes("icons.webp"),
+                    ),
+                ),
             { timeout: 20000 },
         )
-        .toContain("icons.webp");
+        .toBe(true);
 }
 
 test.describe("visual tour — desktop", () => {
@@ -145,7 +155,12 @@ test.describe("visual tour — mobile", () => {
         await page.locator(HAMBURGER).click();
         await expect(page.locator(".sidebar")).toHaveClass(/is-open/);
         await expect(page.locator(".sidebar-close-overlay")).toBeVisible();
-        await shot(page, testInfo, "mobile-sidebar-drawer");
+        // Wait for the slide-in to finish (drawer fully on-screen, x >= 0) before
+        // capturing, otherwise the shot catches it mid-animation off-canvas.
+        await expect.poll(async () => (await page.locator(".sidebar").boundingBox())?.x ?? -1).toBeGreaterThanOrEqual(0);
+        // Viewport-only: the drawer is a fixed overlay, so a full-page shot would leave
+        // it pinned to the top over the whole scrollable item grid.
+        await shot(page, testInfo, "mobile-sidebar-drawer", { fullPage: false });
     });
 
     test("search field revealed", async ({ page }, testInfo) => {
