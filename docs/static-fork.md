@@ -135,6 +135,17 @@ fbe fork's exact SE-on-2.0 mod list; technologies must be filtered; machine
 slot counts absent; amounts may be fractional strings (Rational) — normalize
 to numbers.
 
+- [x] **E2E suite (post-merge).** Playwright specs (`e2e/app.spec.ts`)
+  covering boot/redirect via the 404 fallback, icon CSS application, item →
+  recipe → machines flows, search, pack switching, and the sxp specifics
+  (dummy/orphan hiding, duplicate-name disambiguation, iconText overlays).
+  Runs against the production build served with GitHub Pages semantics
+  (`e2e/server.js`) and live FactorioLab data — a canary for upstream
+  format drift. CI job `E2E (Playwright)` in `ci.yaml`. Writing the suite
+  surfaced and fixed a real gap: the selected pack is now remembered in
+  localStorage (`staticLastPack`), so id-less visits (bare `/`) resolve to
+  the last browsed pack instead of always reverting to the default.
+
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
 Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp

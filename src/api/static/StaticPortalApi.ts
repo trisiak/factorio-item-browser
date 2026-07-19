@@ -32,6 +32,7 @@ import { defaultPack, findPackByCombinationId, PackDefinition, packs } from "./p
 const SCRIPT_VERSION = "static-1";
 
 const KEY_SETTING_OPTIONS = "staticSettingOptions";
+const KEY_LAST_PACK = "staticLastPack";
 
 type PersistedOptions = Partial<SettingOptionsData>;
 
@@ -79,6 +80,18 @@ export class StaticPortalApi implements PortalApi {
             if (pack) {
                 return pack;
             }
+        }
+
+        // No (known) combination id — e.g. a bare "/" visit. Fall back to the last pack
+        // the user browsed, replacing the server session's last-used-setting memory.
+        try {
+            const lastPackId = window.localStorage.getItem(KEY_LAST_PACK);
+            const pack = packs.find((candidate) => candidate.id === lastPackId);
+            if (pack) {
+                return pack;
+            }
+        } catch (e) {
+            // Fall through to the default.
         }
         return defaultPack;
     }
@@ -157,6 +170,12 @@ export class StaticPortalApi implements PortalApi {
         // a combination id in the URL the sidebar getter would otherwise no-op.
         if (this.storageManager.combinationId === null) {
             this.storageManager.combinationId = CombinationId.fromFull(pack.combinationId);
+        }
+
+        try {
+            window.localStorage.setItem(KEY_LAST_PACK, pack.id);
+        } catch (e) {
+            // Losing the last-pack memory is not critical.
         }
 
         return {

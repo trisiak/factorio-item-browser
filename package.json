@@ -49,6 +49,7 @@
     "@babel/preset-env": "^7.15.4",
     "@babel/preset-react": "^7.14.5",
     "@babel/preset-typescript": "^7.15.0",
+    "@playwright/test": "^1.56.1",
     "@types/jest": "^27.0.1",
     "@types/react": "^17.0.20",
     "@types/react-dom": "^17.0.9",
@@ -96,12 +97,14 @@
   "scripts": {
     "analyze": "source-map-explorer build/asset/js/main.*",
     "build": "webpack --mode production",
+    "e2e:serve": "([ -f .env ] || cp .env.development .env) && BASE_PATH=/factorio-item-browser/ npm run build && node e2e/server.js",
     "fix": "eslint src --ext ts,tsx --fix",
     "start": "webpack serve --mode development",
     "test": "npm run test-tsc && npm run test-jest && npm run test-eslint",
     "test-eslint": "eslint src --ext ts,tsx",
     "test-jest": "jest",
-    "test-tsc": "tsc"
+    "test-tsc": "tsc",
+    "test:e2e": "playwright test"
   },
   "browserslist": [
     ">1%"
