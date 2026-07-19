@@ -1,7 +1,18 @@
 name: CI
 on:
+  # Run on every PR so the checks below can be marked "required" in branch
+  # protection, plus on master pushes for post-merge validation. Scoping push
+  # to master avoids running twice on branches that also have an open PR.
   push:
+    branches: [master]
+  pull_request:
   workflow_dispatch:
+
+# Cancel superseded runs for the same ref (e.g. rapid PR pushes), but let
+# master runs finish so post-merge validation is never skipped.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
 
@@ -117,9 +128,54 @@ jobs:
       - name: Run Playwright tests
         run: npm run test:e2e
 
+      # Always upload — the report embeds an end-of-test screenshot for every test
+      # (screenshot: "on" in playwright.config.js), so it's a visual gallery of the
+      # rendered UI on green runs too, not just a failure trace. Download + open
+      # playwright-report/index.html to inspect.
       - name: Upload Playwright report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
+          path: playwright-report/
+
+  e2e-tour:
+    name: E2E Tour (Visual)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+
+      # The curated visual tour (e2e/tour.spec.ts) walks the key UX surfaces against
+      # the production build + live FactorioLab data and captures a full-page
+      # screenshot of each. Failing this check means a surface rendered wrong (or an
+      # upstream data change broke it) — inspect the screenshots artifact below.
+      - name: Run visual tour
+        run: npm run test:e2e:tour
+
+      # The flat, named PNGs — download this to eyeball the UI before deploying.
+      - name: Upload tour screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tour-screenshots
+          path: screenshots/
+
+      - name: Upload tour report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-tour
           path: playwright-report/

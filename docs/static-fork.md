@@ -151,6 +151,30 @@ to numbers.
   localStorage (`staticLastPack`), so id-less visits (bare `/`) resolve to
   the last browsed pack instead of always reverting to the default.
 
+  **Visual inspection.** On CI the functional suite runs with
+  `screenshot: "on"`, and the `E2E (Playwright)` job uploads the Playwright
+  HTML report as an artifact on *every* run (not just failures) — the report
+  embeds an end-of-test screenshot per test, so it doubles as a visual gallery
+  of the rendered UI. Download `playwright-report` from the run and open
+  `index.html` to inspect. For a deliberate, curated walk of the key surfaces
+  (item list / detail / recipe / search / settings across Vanilla, Space Age
+  and Space Exploration, plus the mobile header/drawer/search/recipe states),
+  the **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`) writes
+  full-page screenshots to `./screenshots` (gitignored) and attaches them to
+  the report. The tour is a separate Playwright project (`--project=tour`),
+  kept out of the default `npm run test:e2e` so the functional check stays
+  fast, but it runs in CI as its own job, `E2E Tour (Visual)`, which uploads
+  the shots as the `tour-screenshots` artifact — download it to eyeball the UI
+  before deploying. Screenshots contain game-derived icons/data and must never
+  be committed.
+
+  CI (`ci.yaml`) triggers on `pull_request` (plus master pushes), so every job
+  — `Tests`, `Coding Guidelines`, `Type Checker`, `Build`, `E2E (Playwright)`
+  and `E2E Tour (Visual)` — surfaces as a PR check that can be marked required
+  in branch protection. Caveat: the two e2e jobs fetch live FactorioLab data,
+  so an upstream data change can turn them red independently of the diff;
+  `retries: 2` on CI absorbs transient flakes.
+
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
 Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp
