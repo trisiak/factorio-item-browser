@@ -111,6 +111,36 @@ should mirror this checklist and the two must stay reconciled.
   prefixed short-id URL, click-through and fresh deep links work.
   `opensearch.xml` stays dropped (niche; revisit on request).
 
+- [x] **Phase 6a — technology data layer (research requirements).** The pack
+  now retains and indexes the technology data it previously discarded, without
+  letting it back into the browsable lists. `PackData` keeps
+  `technologiesById`, a same-id `technologyRecipesById` (the research
+  cost/time), and a `technologyIdsByUnlockedRecipe` reverse map built from each
+  technology's `recipeUnlock`. Two additive `PortalApi` methods expose it —
+  `getItemResearch(type, name)` (the technologies that unlock a recipe
+  producing the item, each with its science packs, time and prerequisites) and
+  `getTechnology(name)` (a technology's full detail for a future page + tree
+  traversal). `transfer.ts` gains new types only (`TechnologyMetaData`,
+  `TechnologyData`, `ItemResearchData`) — existing shapes and the 16 prior
+  method signatures are untouched, honouring the interface-compat constraint.
+  Technologies stay out of `listableItems`, so the item grid, search and random
+  picks are unchanged. Unit tests cover both directions (unlock lookup,
+  trigger-tech with no cost, start-available items, technologies not being
+  addressable as items). Data-format facts driving the mapping (verified across
+  the 2.0 / spa / sxp packs): every `recipeUnlock`/`prerequisites`/science-pack
+  reference resolves; a technology item is paired with a same-id research
+  recipe (or none, for the 7–32 trigger/free techs per pack); a recipe may be
+  unlocked by several technologies. **Accepted gap:** FactorioLab carries no
+  research-unit count — only the per-unit science-pack set and time — so we
+  expose *which* packs (and their ratio), not a "×N units" total.
+- [ ] **Phase 6b — technology browsing UI.** Not started. Render "unlocked by
+  &lt;tech&gt;" on the item page (the tech icon clickable), a technology detail
+  page (science packs, research time, prerequisites, unlocked recipes/items),
+  and prerequisite links so the tech tree is traversable. Technology becomes a
+  first-class browsable entity (`type: "technology"`) reachable from items but
+  never listed in the "all items" grid. Needs a route + store + components and
+  a technology icon-resolution path (technology items carry their own `icon`).
+
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
 | PortalApi method | Static behavior against FactorioLab `data.json` |
@@ -122,6 +152,8 @@ should mirror this checklist and the two must stay reconciled.
 | `getRecipeDetails` | Recipe by id; `craftingTime = time`; `description: ""` (schema has none); no expensive mode. |
 | `getRecipeMachines` | The recipe's `producers` list joined against items with a `machine` sub-object (`craftingSpeed = machine.speed`, `numberOfModules = machine.modules`, `energyUsage = machine.usage` kW; item/fluid slot counts defaulted). |
 | `getMachineRecipes` | The inverse of `producers`: recipes naming the given machine item as a producer, as `ItemRecipesData` (same shape as the item recipe lists). Empty for non-producer items, so the machine's item page only shows a "Can craft" section when it is a crafting machine. |
+| `getItemResearch` | Recipes producing the item → the technologies unlocking them (reverse of each technology's `recipeUnlock`), de-duplicated; empty for start-available items (Phase 6a). |
+| `getTechnology` | Technology item → science packs + `time` from its same-id research recipe, `prerequisites` (as clickable refs) and `recipeUnlock` (as recipe entities) (Phase 6a). |
 | `search` | Client-side name search (Phase 3). |
 | `getRandom` | Random sample of items. |
 | `getTooltip` | Item + up to `numberOfRecipesPerEntity` of its recipes. |
