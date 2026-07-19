@@ -119,6 +119,17 @@ describe("StaticPortalApi", (): void => {
         expect(initData.sidebarEntities).toEqual([]);
     });
 
+    test("initializeSession remembers the last pack for id-less visits", async (): Promise<void> => {
+        storageManager.combinationId = CombinationId.fromFull(packs[1].combinationId);
+        await api.initializeSession();
+
+        // A fresh visit without a combination id (new storage manager, nothing detected
+        // from the URL) resolves to the previously browsed pack instead of the default.
+        const freshApi = new StaticPortalApi(new StorageManager(window.localStorage));
+        const initData = await freshApi.initializeSession();
+        expect(initData.setting.combinationId).toBe(packs[1].combinationId);
+    });
+
     test("getItemList excludes technologies, dummies and orphans, and types fluids", async (): Promise<void> => {
         const itemList = await api.getItemList(1);
 

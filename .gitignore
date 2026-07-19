@@ -1,5 +1,7 @@
 /.idea
 /build
 /node_modules
+/playwright-report
+/test-results
 
 /.env

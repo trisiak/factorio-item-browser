@@ -58,8 +58,24 @@ npm install --legacy-peer-deps
 | Type-check only | `npm run test-tsc` |
 | Unit tests only | `npm run test-jest` |
 | Lint only | `npm run test-eslint` (`npm run fix` to autofix) |
+| E2E tests | `npm run test:e2e` (Playwright; builds + serves automatically) |
 
-Before declaring a change done, run `npm test` and `npm run build`.
+Before declaring a change done, run `npm test` and `npm run build`; run
+`npm run test:e2e` when the change touches the data layer, routing, icons or
+anything user-visible.
+
+### E2E notes
+
+- The suite (`e2e/app.spec.ts`) runs against the **production build** served by
+  `e2e/server.js` with real GitHub Pages semantics (path prefix +
+  `404.html` fallback) and fetches **live FactorioLab data** — it doubles as a
+  canary for upstream data-format drift. No mocks.
+- In sandboxed environments set `PLAYWRIGHT_CHROMIUM_PATH` (e.g.
+  `/opt/pw-browsers/chromium`); the config routes only `https://` through
+  `HTTPS_PROXY` so the local test server stays direct.
+- Playwright specs are excluded from jest (`testPathIgnorePatterns`) and from
+  the app's tsc (`tsconfig.json` includes `src` only) — keep it that way, the
+  app toolchain is TS 4.2.
 
 ## Conventions
 
