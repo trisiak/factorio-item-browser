@@ -139,7 +139,11 @@ to numbers.
   covering boot/redirect via the 404 fallback, icon CSS application, item →
   recipe → machines flows, search, pack switching, and the sxp specifics
   (dummy/orphan hiding, duplicate-name disambiguation, iconText overlays).
-  Runs against the production build served with GitHub Pages semantics
+  A `mobile viewport (phone)` block re-runs at a 390×844 portrait resolution
+  (below the medium/large breakpoints) to guard the responsive layout: the
+  collapsed hamburger + search-icon header, the off-canvas sidebar drawer and
+  its close controls, mobile search open/close, and the dropped medium-and-up
+  recipe separator. Runs against the production build served with GitHub Pages semantics
   (`e2e/server.js`) and live FactorioLab data — a canary for upstream
   format drift. CI job `E2E (Playwright)` in `ci.yaml`. Writing the suite
   surfaced and fixed a real gap: the selected pack is now remembered in

@@ -130,3 +130,77 @@ test.describe("Space Exploration (sxp)", () => {
         expect(overlays.length).toBeGreaterThan(0);
     });
 });
+
+test.describe("mobile viewport (phone)", () => {
+    // Portrait phone resolution, below both the medium (800px) and large (1200px)
+    // breakpoints, so the responsive layout switches to its mobile form: the header
+    // collapses to hamburger + search icons, the sidebar becomes an off-canvas drawer,
+    // and medium-and-up affordances (recipe separator, tooltips) drop out.
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    // The header icons are FontAwesome svgs tagged with data-icon; match on those so the
+    // selectors don't depend on child order.
+    const HAMBURGER = ".header-icon:has(svg[data-icon='bars'])";
+    const SEARCH_ICON = ".header-icon:has(svg[data-icon='search'])";
+
+    async function sidebarLeft(page: Page): Promise<number> {
+        return (await page.locator(".sidebar").boundingBox())?.x ?? 0;
+    }
+
+    test("collapses the header to hamburger + search icons instead of the inline search box", async ({ page }) => {
+        await gotoItemList(page);
+
+        await expect(page.locator(HAMBURGER)).toBeVisible();
+        await expect(page.locator(SEARCH_ICON)).toBeVisible();
+        // The desktop inline search box is not mounted in the collapsed mobile header.
+        await expect(page.locator(".header-search")).toHaveCount(0);
+    });
+
+    test("hamburger opens the off-canvas sidebar drawer and the close icon dismisses it", async ({ page }) => {
+        await gotoItemList(page);
+
+        // Off-canvas by default: translated left of the viewport (negative x).
+        expect(await sidebarLeft(page)).toBeLessThan(0);
+
+        await page.locator(HAMBURGER).click();
+        await expect(page.locator(".sidebar")).toHaveClass(/is-open/);
+        await expect.poll(() => sidebarLeft(page)).toBeGreaterThanOrEqual(0);
+        // The dimming overlay behind the drawer only mounts in the open mobile state.
+        await expect(page.locator(".sidebar-close-overlay")).toBeVisible();
+
+        // The drawer's close icon slides it back off-canvas (at phone width the drawer
+        // all but fills the viewport, so this X — not the thin overlay sliver — is the
+        // reachable close control).
+        await page.locator(".sidebar-close-icon").click();
+        await expect(page.locator(".sidebar")).not.toHaveClass(/is-open/);
+        await expect.poll(() => sidebarLeft(page)).toBeLessThan(0);
+        await expect(page.locator(".sidebar-close-overlay")).toHaveCount(0);
+    });
+
+    test("search icon reveals the search field and searches, then the close icon dismisses it", async ({ page }) => {
+        await gotoItemList(page);
+
+        await page.locator(SEARCH_ICON).click();
+        const input = page.locator(".header-search input[type=search]");
+        await expect(input).toBeVisible();
+        await expect(input).toBeFocused();
+
+        await input.fill("iron");
+        await expect(page).toHaveURL(/\/search\/iron/);
+        await expect(page.locator(".entity").first()).toBeVisible();
+
+        await page.locator(".header-search .close-icon").click();
+        await expect(page.locator(".header-search")).toHaveCount(0);
+        await expect(page.locator(SEARCH_ICON)).toBeVisible();
+    });
+
+    test("recipe details stack without the medium-and-up separator", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+
+        await page.goto(`/${shortId}/recipe/electronic-circuit`);
+        await expect(page.locator(".recipe-details").first()).toBeVisible();
+        // The ingredients-to-products chevron separator only renders at medium and up.
+        await expect(page.locator(".recipe-item-separator")).toHaveCount(0);
+    });
+});
