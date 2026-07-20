@@ -6,3 +6,6 @@
 /screenshots
 
 /.env
+
+# Claude Code session artifacts (agent worktrees, local settings)
+.claude/
