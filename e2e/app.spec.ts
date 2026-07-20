@@ -7,8 +7,15 @@ import { expect, Page, test } from "@playwright/test";
  * Pack ids: the synthetic combination ids live in src/api/static/packs.ts; the short
  * forms appearing in URLs are their base62 encodings.
  */
-const SHORT_ID = /[0-9a-zA-Z]{22}/;
+// The 22-char base62 encoding of a synthetic combination id.
+const SHORT_ID_PATTERN = "[0-9a-zA-Z]{22}";
+// Anchored to a path segment (leading slash + trailing-slash lookahead, capture group 1)
+// so extracting it from a URL can never accidentally latch onto an asset contenthash.
+const SHORT_ID = new RegExp(`/(${SHORT_ID_PATTERN})(?=/)`);
 const SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000003";
+
+// The header search field (desktop inline box / opened mobile drawer both expose it).
+const SEARCH_INPUT = ".header-search input[type=search]";
 
 async function gotoItemList(page: Page, path = "/items"): Promise<void> {
     await page.goto(path);
@@ -18,7 +25,7 @@ async function gotoItemList(page: Page, path = "/items"): Promise<void> {
 test("boots via the 404 fallback and redirects to the short-id URL", async ({ page }) => {
     await gotoItemList(page);
 
-    await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID.source}/items`));
+    await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID_PATTERN}/items`));
     expect(await page.locator("a[href*='/item/'], a[href*='/fluid/']").count()).toBeGreaterThan(100);
 });
 
@@ -50,7 +57,7 @@ test("item details show recipes and fill the sidebar", async ({ page }) => {
 test("recipe details list producing machines", async ({ page }) => {
     await gotoItemList(page);
     const url = page.url();
-    const shortId = (url.match(SHORT_ID) || [""])[0];
+    const shortId = (url.match(SHORT_ID) || ["", ""])[1];
 
     await page.goto(`/${shortId}/recipe/electronic-circuit`);
     await expect(page.locator(".machine-entity").first()).toBeVisible();
@@ -59,7 +66,7 @@ test("recipe details list producing machines", async ({ page }) => {
 
 test("machine item page lists the recipes it can craft", async ({ page }) => {
     await gotoItemList(page);
-    const shortId = (page.url().match(SHORT_ID) || [""])[0];
+    const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
     await page.goto(`/${shortId}/item/assembling-machine-3`);
     // The "Can craft" section only appears for machines and holds many recipe entities.
@@ -71,7 +78,7 @@ test("machine item page lists the recipes it can craft", async ({ page }) => {
 test("search finds items", async ({ page }) => {
     await gotoItemList(page);
 
-    await page.fill("input", "iron");
+    await page.locator(SEARCH_INPUT).fill("iron");
     await expect(page).toHaveURL(/\/search\/iron/);
     await expect(page.locator(".entity").first()).toBeVisible();
 });
@@ -98,7 +105,7 @@ test("settings page switches packs", async ({ page }) => {
 
     // Wait for the app to boot on the new pack before navigating on: the boot also
     // persists the last-pack memory that the id-less visit below relies on.
-    await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID.source}`));
+    await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID_PATTERN}`));
     await expect(page.locator("text=Setting: Space Age").first()).toBeVisible();
 
     // An id-less visit remembers the switched pack (localStorage last-pack fallback).
@@ -118,7 +125,7 @@ test.describe("Space Exploration (sxp)", () => {
     test("search disambiguates duplicate names and hides dummies", async ({ page }) => {
         await gotoItemList(page, `/${SXP_FULL_ID}/items`);
 
-        await page.fill("input", "cargo rocket");
+        await page.locator(SEARCH_INPUT).fill("cargo rocket");
         await expect(page.locator(".entity").first()).toBeVisible();
 
         const labels = await page.locator(".entity h3").allTextContents();
@@ -131,7 +138,7 @@ test.describe("Space Exploration (sxp)", () => {
     test("iconText overlays distinguish steam-temperature variants", async ({ page }) => {
         await gotoItemList(page, `/${SXP_FULL_ID}/items`);
 
-        await page.fill("input", "decompressing");
+        await page.locator(SEARCH_INPUT).fill("decompressing");
         await expect(page.locator(".entity").first()).toBeVisible();
 
         // At least one result icon carries the ::after temperature overlay.
@@ -207,7 +214,7 @@ test.describe("mobile viewport (phone)", () => {
 
     test("recipe details stack without the medium-and-up separator", async ({ page }) => {
         await gotoItemList(page);
-        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
         await page.goto(`/${shortId}/recipe/electronic-circuit`);
         await expect(page.locator(".recipe-details").first()).toBeVisible();
@@ -219,7 +226,7 @@ test.describe("mobile viewport (phone)", () => {
 test.describe("technology", () => {
     test("item links to its unlocking technology, whose page is traversable", async ({ page }) => {
         await gotoItemList(page);
-        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
         // Electronic circuit is unlocked by the "Electronics" technology in vanilla.
         await page.goto(`/${shortId}/item/electronic-circuit`);
@@ -235,7 +242,7 @@ test.describe("technology", () => {
 
     test("a mid-tree technology shows research cost and clickable prerequisites", async ({ page }) => {
         await gotoItemList(page);
-        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
         await page.goto(`/${shortId}/technology/automation-2`);
         await expect(page.locator("h1")).toContainText("Automation 2");
@@ -253,7 +260,7 @@ test.describe("technology", () => {
 
     test("technology page lists the technologies it leads to", async ({ page }) => {
         await gotoItemList(page);
-        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
         // Automation is an early tech that other technologies depend on.
         await page.goto(`/${shortId}/technology/automation`);
@@ -264,7 +271,7 @@ test.describe("technology", () => {
 
     test("recipe page shows the technology that unlocks it", async ({ page }) => {
         await gotoItemList(page);
-        const shortId = (page.url().match(SHORT_ID) || [""])[0];
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
 
         // The electronic-circuit recipe is unlocked by the "Electronics" technology.
         await page.goto(`/${shortId}/recipe/electronic-circuit`);

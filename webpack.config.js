@@ -1,5 +1,4 @@
 const AsyncCssPlugin = require("async-css-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const dotenv = require("dotenv");
 const HtmlInlineCSSWebpackPlugin = require("html-inline-css-webpack-plugin").default;
@@ -36,6 +35,14 @@ module.exports = (env, argv) => {
             images: `${currentPath}/src/style/partial/images.scss`,
         },
         optimization: {
+            // Split shared dependencies into a stable vendor chunk so return visitors
+            // re-download only the app code when it changes. The HtmlWebpackPlugin picks
+            // up every emitted chunk automatically, so index.html and 404.html both
+            // reference the vendor chunk; the skip-assets filter below is anchored to the
+            // "images" entry name so it never swallows it.
+            splitChunks: {
+                chunks: "all",
+            },
             minimizer: [
                 new TerserPlugin({
                     terserOptions: {
@@ -51,6 +58,8 @@ module.exports = (env, argv) => {
             path: `${currentPath}/build`,
             publicPath: publicPath,
             filename: isProduction ? "asset/js/[name].[contenthash].js" : "asset/js/[name].js",
+            // Replaces the CleanWebpackPlugin: wipe build/ before each production emit.
+            clean: true,
         },
         resolve: {
             extensions: [".jpg", ".js", ".json", ".jsx", ".png", ".svg", ".ts", ".tsx"],
@@ -95,7 +104,6 @@ module.exports = (env, argv) => {
             ],
         },
         plugins: [
-            new CleanWebpackPlugin(),
             new CopyPlugin({
                 patterns: [
                     { from: `${currentPath}/src/root/favicon.ico` },
@@ -146,6 +154,9 @@ module.exports = (env, argv) => {
             hot: true,
             historyApiFallback: true,
         },
-        devtool: isProduction ? false : "source-map",
+        // Production emits hidden source maps (.map files without the sourceMappingURL
+        // comment): they never ship a reference to end users, but `npm run analyze`
+        // (source-map-explorer) can still read them to break down bundle size.
+        devtool: isProduction ? "hidden-source-map" : "source-map",
     };
 };

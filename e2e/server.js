@@ -18,6 +18,8 @@ const MIME = {
     ".webmanifest": "application/manifest+json",
     ".ico": "image/x-icon",
     ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".webp": "image/webp",
 };
 
 if (!fs.existsSync(path.join(BUILD, "404.html"))) {
@@ -33,7 +35,7 @@ http.createServer((req, res) => {
     if (urlPath.startsWith(PREFIX)) {
         const relative = urlPath.slice(PREFIX.length).replace(/^\//, "") || "index.html";
         const candidate = path.join(BUILD, relative);
-        if (candidate.startsWith(BUILD) && fs.existsSync(candidate) && !fs.statSync(candidate).isDirectory()) {
+        if (candidate.startsWith(BUILD + path.sep) && fs.existsSync(candidate) && !fs.statSync(candidate).isDirectory()) {
             file = candidate;
         }
     }

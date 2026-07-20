@@ -326,6 +326,36 @@ to numbers.
   so an upstream data change can turn them red independently of the diff;
   `retries: 2` on CI absorbs transient flakes.
 
+- [x] **Tooling / build-config maintenance.** The `--legacy-peer-deps` install
+  ritual is gone: `react-sortablejs` moved to `^6.1.4` (its peers accept
+  `react >=16.9.0`), so plain `npm ci`/`npm install` resolve cleanly — the flag
+  was dropped from `ci.yaml`, `pages.yaml`, `CLAUDE.md` and `README.md`.
+  `npm audit fix` (semver-compatible only, no `--force`) bumped the two runtime
+  findings — `base-x` → 3.0.11 and `@babel/runtime` → 7.29.x; the remaining
+  advisories are all in the dev/webpack-dev-server tree and need major bumps,
+  deferred to the version-upgrade wave. `.github/dependabot.yml` now watches the
+  `npm` and `github-actions` ecosystems weekly. Node is pinned via a
+  `package.json` `engines` field (`node >=22`) and a `.nvmrc` (`22`). **CI:** the
+  `Build` job now bakes in `BASE_PATH=/factorio-item-browser/` and uploads the
+  base-path-correct `build/` artifact; both e2e jobs `needs: build`, download it,
+  and serve it directly instead of rebuilding (the `e2e:serve` npm script split
+  into `e2e:build` + a serve step that skips the build when `build/404.html`
+  already exists — local `npm run test:e2e` still builds-then-serves
+  end-to-end). Playwright browser binaries are cached, keyed on the resolved
+  `@playwright/test` version, and a daily `schedule` cron runs the whole workflow
+  so the live-data e2e canary catches upstream drift without waiting for a PR.
+  **Webpack:** `optimization.splitChunks: { chunks: "all" }` emits a stable
+  vendor chunk (verified: both `index.html` and `404.html` reference it, and the
+  `images.*.js` skip-assets filter still drops only the images stub); prod
+  `devtool` is `hidden-source-map` (maps emitted, no `sourceMappingURL` shipped);
+  `CleanWebpackPlugin` replaced by `output.clean: true` (dependency dropped); the
+  `analyze` script now runs against the hidden maps via `source-map-explorer`
+  (added as a devDependency, invoked with `--no-border-checks`). **E2E
+  robustness:** the desktop search tests use the explicit header-search input
+  locator, the `SHORT_ID` regex is anchored to a path segment (so it can't latch
+  onto an asset contenthash), and `e2e/server.js` gained `.svg`/`.webp` MIME
+  types and a tightened `startsWith(BUILD + path.sep)` containment check.
+
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
 Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp
