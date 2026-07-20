@@ -99,7 +99,6 @@ export class GlobalStore {
                 // Current script version is already loaded, so proceed as usual.
                 const combinationId = CombinationId.fromFull(initData.setting.combinationId);
                 this.storageManager.combinationId = combinationId;
-                this.storageManager.hash = initData.setting.combinationHash;
 
                 for (const handler of this.initHandlers) {
                     handler(initData);

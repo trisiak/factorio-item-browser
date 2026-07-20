@@ -67,7 +67,9 @@ should mirror this checklist and the two must stay reconciled.
   item grid, recipe pages and machine cards all show real icons for both the
   vanilla-2.0 and space-age packs; search and the long-form combination-id
   redirect verified along the way. Mod icons (settings page) intentionally
-  resolve to nothing — that page dies in Phase 4.
+  resolve to nothing — the FactorioLab data carries no mod icon rects, so the
+  settings mod list (kept in Phase 4) shows a plain placeholder box in their
+  place.
 - [ ] **Phase 3 — search polish.** A basic prefix/substring item search
   shipped with Phase 1 (`PackData.search`). Remaining: evaluate result
   quality on the big packs (sxp) and improve ranking/matching only if it
@@ -169,6 +171,49 @@ should mirror this checklist and the two must stay reconciled.
   `getTechnologyList` data-layer method plus an `ItemList`-style page/route.
   A technology tooltip on the item/prereq boxes (currently only the sidebar hover
   resolves one) and a `[technology=…]` rich copy template are smaller follow-ups.
+
+- [x] **Dead-code sweep (backend-era removal).** Removed code left stranded by
+  the Phase 4 backend deletion, all verified as zero-usage before removal:
+  - `StorageManager`'s localStorage response cache (`CacheUtils`/`CacheItem`,
+    the `cache`/`hash` keys, `writeToCache`/`readFromCache`/`clearCombination`,
+    the `hash` getter/setter and the quota-recovery `cleanups` chain) — it only
+    served the deleted axios `HttpPortalApi`. `storeItem` is now a plain
+    best-effort `try/catch`; `GlobalStore.initialize` no longer writes the hash;
+    `SettingsStore` no longer clears cache keys; `Config.cacheLifetime` and the
+    `CACHE_LIFETIME` env lines are gone. `SidebarStore.sendEntities` now wraps
+    its `storageManager.sidebarEntities` persist in a `try/catch` so a quota
+    error can't throw out of a click handler.
+  - Game-derived / stale fixtures: the 11 Factorio savegame zips under
+    `test/asset/savegame/` (fixtures for the deleted `SaveGameReader`, and a
+    top-constraint violation) and the `type/byte-buffer/` stub for the removed
+    dependency (`typeRoots` keeps `type/` for the remaining `type/images` stub).
+  - Dead components with no importers: `ButtonGroup`, `LinkedButton`, `TextBox`.
+  - `ModIconManager` (a no-op machine — mod icons never resolve) and its
+    `ModIcon` plumbing; `ModIcon` now renders a plain placeholder box. Mod cards
+    hide the "Name:" row when the label equals the name (mirrors the author row).
+  - Dead locale key groups (deletion only, no rewording): `error.incompatible-client`
+    (the pre-boot box in `index.ejs` is hardcoded English), `error.server-failure`
+    (plus the never-constructed `ServerFailureError` class and its `ErrorName`
+    member), `setting-name.temporary` (`getTranslatedSettingName` simplified;
+    `isTemporary` is always `false`), and `box-label.expensive`. The
+    always-null `<RecipeDetails recipe={details.expensiveRecipe}/>` render was
+    removed from `RecipeDetailsPage`; the `CompactRecipe`/`RecipeDetails`
+    "expensive" styling branches are **intentionally retained for shape-compat**
+    (`RecipeData.isExpensive`/`RecipeDetailsData.expensiveRecipe` stay in the
+    transfer shapes, they just never carry a truthy value from the static source).
+  - `Router.currentState` (written, never read) and `package.json` metadata
+    (`main` → `src/index.tsx`; `homepage`/`repository`/`bugs` → the
+    `trisiak/factorio-item-browser` fork).
+
+  **Deleting provably-unused transfer types is not a shape change.** CLAUDE.md
+  forbids *changing* the `transfer.ts` shapes because stores/components stay
+  interface-compatible through the `portalApi` seam. Removing types that have had
+  zero producers and zero consumers since Phase 4 — `SettingValidationData` and
+  `ValidationProblemData` (and `ValidationProblemType` in `util/const.ts`), plus
+  the never-set-never-read `InitData.lastUsedSetting` optional field — touches no
+  live shape any code depends on, so it preserves the seam rather than breaking
+  it. The 16 in-use `PortalApi` method signatures and every shape a store or
+  component reads are untouched.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

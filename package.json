@@ -1,7 +1,7 @@
 {
   "name": "@factorio-item-browser/portal-frontend",
   "description": "The frontend of the Factorio Item Browser portal, accessed by the users.",
-  "homepage": "https://github.com/factorio-item-browser/portal-frontend",
+  "homepage": "https://github.com/trisiak/factorio-item-browser",
   "keywords": [
     "Factorio Item Browser",
     "FIB",
@@ -15,7 +15,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/factorio-item-browser/portal-frontend.git"
+    "url": "git+https://github.com/trisiak/factorio-item-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trisiak/factorio-item-browser/issues"
   },
   "private": true,
   "dependencies": {
@@ -93,7 +96,7 @@
     "webpack-cli": "^4.8.0",
     "webpack-dev-server": "^4.1.0"
   },
-  "main": "src/index.jsx",
+  "main": "src/index.tsx",
   "scripts": {
     "analyze": "source-map-explorer build/asset/js/main.*",
     "build": "webpack --mode production",

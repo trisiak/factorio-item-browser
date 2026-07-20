@@ -145,7 +145,6 @@ export class SettingsStore {
     public changeToSelectedSetting(): void {
         this.isChangingToSetting = true;
 
-        this.storageManager.clearCombination(CombinationId.fromFull(this.selectedCombinationId));
         this.router.redirectToIndex(CombinationId.fromFull(this.selectedCombinationId));
     }
 
@@ -157,7 +156,6 @@ export class SettingsStore {
         try {
             const combinationId = CombinationId.fromFull(this.selectedCombinationId);
 
-            this.storageManager.clearCombination(combinationId);
             await this.portalApi.saveSetting(this.selectedCombinationId, this.selectedOptions);
             this.router.redirectToIndex(combinationId);
         } catch (e) {

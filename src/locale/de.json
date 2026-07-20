@@ -1,6 +1,5 @@
 {
     "box-label": {
-        "expensive": "teurer Modus",
         "fluid": "Flüssigkeit",
         "item": "Item",
         "machine": "Maschine",
@@ -26,17 +25,9 @@
             "title": "Unerwarteter Browser-Fehler",
             "description": "Der Browser hat einen unerwarteten Fehler verursacht, ähnlich... dem Ausgehen von Eisen. Bitte lade die Seite neu und versuche es erneut."
         },
-        "incompatible-client": {
-            "title": "Inkompatibler Browser",
-            "description": "Der von der verwendete Browser mit seinen Einstellungen ist leider nicht kompatibel mit der Seite. Bitte überprüfe, dass du einen modernen Browser verwendest, und dass Cookies für diese Domain zugelassen sind."
-        },
         "page-not-found": {
             "title": "Seite nicht gefunden",
             "description": "Wonach auch immer du gesucht hast, es existiert nicht."
-        },
-        "server-failure": {
-            "title": "Interner Serverfehler",
-            "description": "Der Server hat mit unverständlichem Geschwafel geantwortet, vielleicht muss der Babelfisch erneuert werden. Bitte lade die Seite neu und versuche es erneut."
         },
         "service-not-available": {
             "title": "Service nicht verfügbar",
@@ -122,9 +113,6 @@
             "loading": "Lade weitere Ergebnisse..."
         },
         "title": "Suche: {{query}} - Factorio Item Browser"
-    },
-    "setting-name": {
-        "temporary": "Temporär"
     },
     "settings": {
         "change-to-setting": "Zu \"{{name}}\" wechseln",

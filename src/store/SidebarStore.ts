@@ -189,7 +189,11 @@ export class SidebarStore {
 
     private sendEntities(): void {
         const entities = [...this.pinnedEntities, ...this.unpinnedEntities];
-        this.storageManager.sidebarEntities = entities;
+        try {
+            this.storageManager.sidebarEntities = entities;
+        } catch (e) {
+            // Ignore errors related to persisting sidebar entities.
+        }
 
         (async (): Promise<void> => {
             try {

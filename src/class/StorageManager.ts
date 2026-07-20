@@ -1,61 +1,8 @@
 import { SidebarEntityData } from "../api/transfer";
-import { Config } from "../util/config";
 import { CombinationId } from "./CombinationId";
 
-const KEY_CACHE = "cache";
 const KEY_SCRIPT_VERSION = "script-version";
 const KEY_SIDEBAR_ENTITIES = "sidebar-entities";
-const KEY_HASH = "hash";
-
-interface CacheItem<T> {
-    data: T;
-    time: number;
-}
-
-class CacheUtils {
-    public static serialize<T>(data: T): string {
-        const item: CacheItem<T> = {
-            data,
-            time: Date.now() + Config.cacheLifetime * 1000,
-        };
-
-        return JSON.stringify(item);
-    }
-
-    public static deserialize<T>(serializedData: string): T | null {
-        let item: CacheItem<T>;
-        try {
-            item = JSON.parse(serializedData);
-        } catch (e) {
-            return null;
-        }
-
-        if (typeof item !== "object" || item === null || !item.time || !item.data || item.time < Date.now()) {
-            return null;
-        }
-        return item.data;
-    }
-
-    public static clean(storage: Storage): void {
-        for (const key of Object.keys(storage)) {
-            if (key.startsWith(KEY_CACHE)) {
-                const item = CacheUtils.deserialize(storage.getItem(key) || "");
-                if (item === null) {
-                    // E.g. when the lifetime has been exceeded.
-                    storage.removeItem(key);
-                }
-            }
-        }
-    }
-
-    public static clear(storage: Storage, predicate: (key: string) => boolean): void {
-        for (const key of Object.keys(storage)) {
-            if (key.startsWith(KEY_CACHE) && predicate(key)) {
-                storage.removeItem(key);
-            }
-        }
-    }
-}
 
 class SidebarEntitiesUtils {
     public static deserialize(data: string): SidebarEntityData[] {
@@ -84,16 +31,10 @@ export class StorageManager {
     public combinationId: CombinationId | null = null;
     public sidebarEntitiesChangeHandler: SidebarEntitiesChangeHandler | null = null;
 
-    private cleanups: (() => void)[] = [
-        (): void => CacheUtils.clean(this.storage),
-        (): void => CacheUtils.clear(this.storage, (): boolean => true),
-    ];
-
     public constructor(storage: Storage) {
         this.storage = storage;
 
         window.addEventListener("storage", this.handleStorageEvent.bind(this));
-        CacheUtils.clean(storage);
     }
 
     private buildStorageKey(prefix: string, ...suffixes: string[]): string | undefined {
@@ -112,19 +53,10 @@ export class StorageManager {
     }
 
     private storeItem(key: string, item: string): void {
-        const cleanups = this.cleanups.slice();
-
-        while (true) {
-            try {
-                this.storage.setItem(key, item);
-                return;
-            } catch (e) {
-                const cleanup = cleanups.shift();
-                if (!cleanup) {
-                    throw e;
-                }
-                cleanup();
-            }
+        try {
+            this.storage.setItem(key, item);
+        } catch (e) {
+            // Persistence is best-effort; ignore storage errors (e.g. quota exceeded).
         }
     }
 
@@ -134,19 +66,6 @@ export class StorageManager {
 
     public get scriptVersion(): string {
         return this.storage.getItem(KEY_SCRIPT_VERSION) || "";
-    }
-
-    public set hash(combinationHash: string) {
-        const key = this.buildStorageKey(KEY_HASH);
-        if (!key || !this.combinationId) {
-            return;
-        }
-
-        const existingHash = this.storage.getItem(key) || "";
-        if (existingHash !== combinationHash) {
-            this.clearCombination(this.combinationId);
-            this.storage.setItem(key, combinationHash);
-        }
     }
 
     public set sidebarEntities(sidebarEntities: SidebarEntityData[]) {
@@ -165,34 +84,6 @@ export class StorageManager {
         }
 
         return SidebarEntitiesUtils.deserialize(this.storage.getItem(key) || "");
-    }
-
-    public writeToCache<T>(cacheKey: string, data: T): void {
-        const storageKey = this.buildStorageKey(KEY_CACHE, cacheKey);
-        if (!storageKey) {
-            return;
-        }
-
-        this.storeItem(storageKey, CacheUtils.serialize<T>(data));
-    }
-
-    public readFromCache<T>(cacheKey: string): T | null {
-        const storageKey = this.buildStorageKey(KEY_CACHE, cacheKey);
-        if (!storageKey) {
-            return null;
-        }
-
-        const serializedData = this.storage.getItem(storageKey);
-        if (!serializedData) {
-            return null;
-        }
-
-        return CacheUtils.deserialize<T>(serializedData);
-    }
-
-    public clearCombination(combinationId: CombinationId): void {
-        const prefix = [KEY_CACHE, combinationId.toShort()].join("-");
-        CacheUtils.clear(this.storage, (key: string): boolean => key.startsWith(prefix));
     }
 }
 

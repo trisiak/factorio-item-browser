@@ -36,10 +36,12 @@ const Mod: FC<Props> = ({ mod, setting }) => {
             <div className="mod-content">
                 <h3 className="entity-head">{mod.label}</h3>
                 <div className="mod-details">
-                    <div className="mod-detail">
-                        <span className="label">{t("settings.mod-list.name")}</span>
-                        <span className="value">{mod.name}</span>
-                    </div>
+                    {mod.label !== mod.name ? (
+                        <div className="mod-detail">
+                            <span className="label">{t("settings.mod-list.name")}</span>
+                            <span className="value">{mod.name}</span>
+                        </div>
+                    ) : null}
                     {mod.author ? (
                         <div className="mod-detail">
                             <span className="label">{t("settings.mod-list.author")}</span>

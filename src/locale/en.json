@@ -1,6 +1,5 @@
 {
     "box-label": {
-        "expensive": "expensive mode",
         "fluid": "fluid",
         "item": "item",
         "machine": "machine",
@@ -26,17 +25,9 @@
             "title": "Unexpected browser error",
             "description": "The browser triggered an unexpected error, like... running out of iron. Please reload the page and try again."
         },
-        "incompatible-client": {
-            "title": "Incompatible browser",
-            "description": "The browser with its current settings you are using is not compatible with this website. Please check that you are using a modern browser, and that cookies for this domain are allowed."
-        },
         "page-not-found": {
             "title": "Page not found",
             "description": "The thing you are searching for does not exist."
-        },
-        "server-failure": {
-            "title": "Internal server error",
-            "description": "The server responded with some incomprehensible gibberish, maybe a new babel fish is needed. Please reload the page and try again."
         },
         "service-not-available": {
             "title": "Service not available",
@@ -122,9 +113,6 @@
             "loading": "Loading more results..."
         },
         "title": "Search: {{query}} - Factorio Item Browser"
-    },
-    "setting-name": {
-        "temporary": "Temporary"
     },
     "settings": {
         "change-to-setting": "Change to \"{{name}}\"",
