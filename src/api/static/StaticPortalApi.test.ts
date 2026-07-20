@@ -1,10 +1,10 @@
 import { CombinationId } from "../../class/CombinationId";
 import { StorageManager } from "../../class/StorageManager";
-import { PageNotFoundError } from "../../error/page";
+import { PageNotFoundError, ServiceNotAvailableError } from "../../error/page";
 import { SettingStatus } from "../../util/const";
 import { SidebarEntityData } from "../transfer";
 import { clearPackDataCache, StaticPortalApi } from "./StaticPortalApi";
-import { FactorioLabData } from "./factoriolab";
+import { FactorioLabData, FactorioLabItem } from "./factoriolab";
 import { packs } from "./packs";
 
 // A fully synthetic dataset — deliberately not resembling any real game data.
@@ -109,6 +109,23 @@ class FakeImage {
     public set src(value: string) {
         setTimeout(() => this.onload && this.onload(), 0);
     }
+}
+
+/**
+ * Builds an api whose pack download resolves to the given data, for tests that need a dataset
+ * other than the shared fixture (pagination sizing, malformed data). Resets the pack cache so
+ * the custom data is actually fetched.
+ */
+function apiForData(data: unknown): StaticPortalApi {
+    clearPackDataCache();
+    (global as { fetch?: unknown }).fetch = jest.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => data,
+    }));
+    const storageManager = new StorageManager(window.localStorage);
+    storageManager.combinationId = CombinationId.fromFull(packs[0].combinationId);
+    return new StaticPortalApi(storageManager);
 }
 
 describe("StaticPortalApi", (): void => {
@@ -454,5 +471,63 @@ describe("StaticPortalApi", (): void => {
         await api.search("widget", 1);
 
         expect((global as unknown as { fetch: jest.Mock }).fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test("search paginates and disambiguates duplicate labels across the page boundary", async (): Promise<void> => {
+        // 25 matching items: 23 uniquely-named ones followed by two that share the label "Zdup".
+        // The page size is 24, so the two duplicates straddle the page-1/page-2 boundary — yet
+        // both must be disambiguated, because the label counts consider every match, not a page.
+        const items: FactorioLabItem[] = [];
+        const out: { [id: string]: number } = {};
+        for (let i = 0; i < 23; ++i) {
+            const id = `gadget-${String(i).padStart(2, "0")}`;
+            items.push({ id, name: `Item ${String(i).padStart(2, "0")}`, category: "parts", row: 0 });
+            out[id] = 1;
+        }
+        items.push({ id: "gadget-dup-1", name: "Zdup", category: "parts", row: 0 });
+        items.push({ id: "gadget-dup-2", name: "Zdup", category: "parts", row: 0 });
+        out["gadget-dup-1"] = 1;
+        out["gadget-dup-2"] = 1;
+        const bigApi = apiForData({
+            version: {},
+            items,
+            recipes: [{ id: "bulk", name: "Bulk", category: "parts", row: 0, time: 1, out }],
+            icons: [],
+        });
+
+        const page1 = await bigApi.search("gadget", 1);
+        expect(page1.numberOfResults).toBe(25);
+        expect(page1.results).toHaveLength(24);
+        // Last result on page 1 is the first duplicate, tagged with its raw id.
+        expect(page1.results[23].label).toBe("Zdup (gadget-dup-1)");
+
+        const page2 = await bigApi.search("gadget", 2);
+        expect(page2.numberOfResults).toBe(25);
+        expect(page2.results).toHaveLength(1);
+        // Its sibling landed on page 2 and is still disambiguated.
+        expect(page2.results[0].label).toBe("Zdup (gadget-dup-2)");
+    });
+
+    test("research lookups report the unlocked-recipe count without materializing the recipes", async (): Promise<void> => {
+        // The full technology build materializes the unlocked recipe entities...
+        const full = await api.getTechnology("mining-tech");
+        expect(full.numberOfUnlockedRecipes).toBe(1);
+        expect(full.unlockedRecipes).toHaveLength(1);
+
+        // ...while the lightweight "unlocked by" lookups report the same count with an empty
+        // unlockedRecipes list (their consumers never read the recipes).
+        const viaRecipe = await api.getRecipeResearch("doubler-recipe");
+        expect(viaRecipe[0].name).toBe("mining-tech");
+        expect(viaRecipe[0].numberOfUnlockedRecipes).toBe(full.numberOfUnlockedRecipes);
+        expect(viaRecipe[0].unlockedRecipes).toEqual([]);
+
+        const viaItem = await api.getItemResearch("item", "doubler-a");
+        expect(viaItem.technologies[0].numberOfUnlockedRecipes).toBe(full.numberOfUnlockedRecipes);
+        expect(viaItem.technologies[0].unlockedRecipes).toEqual([]);
+    });
+
+    test("malformed pack data (items/recipes not arrays) fails with a legible error", async (): Promise<void> => {
+        const badApi = apiForData({ version: {}, recipes: [] });
+        await expect(badApi.getItemList(1)).rejects.toBeInstanceOf(ServiceNotAvailableError);
     });
 });

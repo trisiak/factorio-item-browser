@@ -41,6 +41,9 @@ type PersistedOptions = Partial<SettingOptionsData>;
 /** The icon cell size of FactorioLab spritesheets (66 px stride with a 2 px gutter). */
 const ICON_CELL_SIZE = 64;
 
+/** Abort a pack download that stalls, surfacing it as a legible ServiceNotAvailableError. */
+const FETCH_TIMEOUT_MS = 30000;
+
 type IconSheet = {
     url: string;
     width: number;
@@ -115,19 +118,37 @@ export class StaticPortalApi implements PortalApi {
     }
 
     private async fetchPackData(pack: PackDefinition): Promise<PackData> {
-        let response: Response;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+        let data: FactorioLabData;
         try {
-            response = await fetch(`${pack.source.baseUrl}/data.json`);
+            const response = await fetch(`${pack.source.baseUrl}/data.json`, { signal: controller.signal });
+            if (!response.ok) {
+                throw new ServiceNotAvailableError(
+                    `Failed to download the data of pack "${pack.id}": HTTP ${response.status}`,
+                );
+            }
+            data = (await response.json()) as FactorioLabData;
         } catch (e) {
+            // Re-throw the legible HTTP error as-is; collapse network failures, aborts (the
+            // timeout) and JSON parse errors into one clear message naming the pack.
+            if (e instanceof ServiceNotAvailableError) {
+                throw e;
+            }
             throw new ServiceNotAvailableError(`Failed to download the data of pack "${pack.id}".`);
+        } finally {
+            clearTimeout(timeout);
         }
-        if (!response.ok) {
+
+        // Fail legibly on upstream format drift rather than deep inside PackData: the two lists
+        // this app indexes must be arrays (icons may be absent — the pack then has no icons).
+        if (!Array.isArray(data.items) || !Array.isArray(data.recipes)) {
             throw new ServiceNotAvailableError(
-                `Failed to download the data of pack "${pack.id}": HTTP ${response.status}`,
+                `The data of pack "${pack.id}" is malformed: "items" and "recipes" must be arrays.`,
             );
         }
 
-        const data = (await response.json()) as FactorioLabData;
         return new PackData(pack, data);
     }
 
@@ -397,7 +418,7 @@ export class StaticPortalApi implements PortalApi {
         return entity;
     }
 
-    public async sendSidebarEntities(sidebarEntities: SidebarEntityData[]): Promise<void> {
+    public async sendSidebarEntities(_sidebarEntities: SidebarEntityData[]): Promise<void> {
         // The sidebar store already persists to localStorage; there is no server to notify.
     }
 }
