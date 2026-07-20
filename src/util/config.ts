@@ -8,7 +8,6 @@ type FooterIcon = {
 
 export const Config = {
     // env variables
-    cacheLifetime: parseInt(process.env.CACHE_LIFETIME || "", 10),
     /**
      * The path prefix the app is served under (e.g. "/factorio-item-browser" on GitHub
      * Pages project sites), without a trailing slash. Empty when served from the root.

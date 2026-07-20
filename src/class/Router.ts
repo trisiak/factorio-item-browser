@@ -20,7 +20,6 @@ export class Router {
     private readonly changeHandlers = new Map<string, ChangeHandler>();
     private readonly globalChangeHandlers = new Set<ChangeHandler>();
     private combinationId: CombinationId | null = null;
-    private currentState: State | null = null;
     private errorHandler: ErrorHandler | null = null;
 
     public constructor() {
@@ -54,7 +53,6 @@ export class Router {
     }
 
     private handleChangeEvent(state: SubscribeState): void {
-        this.currentState = state.route;
         if (this.getRouteSuffix(state.route.name) === null) {
             for (const handler of this.globalChangeHandlers) {
                 handler(state.route);

@@ -1,4 +1,4 @@
-import { RecipeMode, SettingStatus, ValidationProblemType } from "../util/const";
+import { RecipeMode, SettingStatus } from "../util/const";
 
 export type ItemType = "item" | "fluid" | string;
 export type NamesByTypes = { [key: string]: string[] };
@@ -29,7 +29,6 @@ export type IconsStyleData = {
 
 export type InitData = {
     setting: SettingData;
-    lastUsedSetting?: SettingData;
     sidebarEntities: SidebarEntityData[];
     scriptVersion: string;
 };
@@ -137,25 +136,10 @@ export type SettingOptionsData = {
     recipeMode: string;
 };
 
-export type SettingValidationData = {
-    combinationId: string;
-    status: SettingStatus;
-    isValid: boolean;
-    validationProblems: ValidationProblemData[];
-    existingSetting?: SettingData;
-};
-
 export type SidebarEntityData = {
     type: SidebarEntityType;
     name: string;
     label: string;
     pinnedPosition: number;
     lastViewTime: string;
-};
-
-export type ValidationProblemData = {
-    mod: string;
-    version: string;
-    type: ValidationProblemType;
-    dependency: string;
 };

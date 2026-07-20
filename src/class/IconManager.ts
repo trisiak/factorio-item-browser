@@ -2,11 +2,9 @@ import { debounce } from "throttle-debounce";
 import { PortalApi, portalApi } from "../api/PortalApi";
 import { NamesByTypes } from "../api/transfer";
 import { Config } from "../util/config";
-import { CombinationId } from "./CombinationId";
 import { NamesByTypesSet } from "./NamesByTypesSet";
 
 const CSS_SELECTOR_COMMON = ".icon-{type}-{name}";
-const CSS_SELECTOR_MOD = ".icon-{combinationId}-{type}-{name}";
 
 class IconsStyle {
     private readonly styleElement: HTMLElement;
@@ -94,50 +92,5 @@ class IconManager extends AbstractIconManager {
     }
 }
 
-class ModIconManager extends AbstractIconManager {
-    public requestIcon(combinationId: string, name: string): void {
-        this.requestEntity(combinationId, name);
-    }
-
-    public buildCssClass(combinationId: string, name: string): string {
-        let result = CSS_SELECTOR_MOD.slice(1);
-        result = result.replaceAll("{combinationId}", combinationId);
-        result = result.replaceAll("{type}", "mod");
-        result = result.replaceAll("{name}", name.replaceAll(" ", "_"));
-        return result;
-    }
-
-    protected async requestStyleForEntities(entities: NamesByTypes): Promise<NamesByTypes> {
-        const requests: Promise<NamesByTypes>[] = [];
-        for (const [combinationId, modNames] of Object.entries(entities)) {
-            requests.push(this.requestStyleForCombination(combinationId, modNames));
-        }
-
-        const processedEntities = new NamesByTypesSet();
-        const results = await Promise.allSettled(requests);
-        for (const result of results) {
-            if (result.status === "fulfilled") {
-                processedEntities.merge(result.value);
-            }
-        }
-        return processedEntities.getData();
-    }
-
-    private async requestStyleForCombination(combinationId: string, modNames: string[]): Promise<NamesByTypes> {
-        const portalApi = this.portalApi.withCombinationId(CombinationId.fromFull(combinationId));
-        const request = {
-            cssSelector: CSS_SELECTOR_MOD.replace("{combinationId}", combinationId),
-            entities: {
-                mod: modNames,
-            },
-        };
-
-        const response = await portalApi.getIconsStyle(request);
-        this.style.append(response.style);
-        return { [combinationId]: response.processedEntities.mod || [] };
-    }
-}
-
 const style = new IconsStyle();
 export const iconManager = new IconManager(portalApi, style);
-export const modIconManager = new ModIconManager(portalApi, style);

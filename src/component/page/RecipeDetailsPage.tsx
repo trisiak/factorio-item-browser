@@ -38,7 +38,6 @@ const RecipeDetailsPage: FC = () => {
             </DetailsHead>
 
             <RecipeDetails recipe={details.recipe} />
-            <RecipeDetails recipe={details.expensiveRecipe} />
 
             <TechnologyEntityList
                 headline={t("recipe-details.unlocked-by", { count: recipeStore.unlockedByTechnologies.length })}
