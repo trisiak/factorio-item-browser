@@ -214,6 +214,50 @@ should mirror this checklist and the two must stay reconciled.
   live shape any code depends on, so it preserves the seam rather than breaking
   it. The 16 in-use `PortalApi` method signatures and every shape a store or
   component reads are untouched.
+- [x] **Error-path + state-consistency hardening.** A review pass fixed a set of
+  stuck-state and race bugs surfaced by the static data layer (multi-MB packs mean
+  slow first navigations and real failure windows):
+  - **Unknown-combination-id sidebar wipe.** A visit carrying a well-formed but
+    unknown/stale combination id used to leave storage scoped to that phantom id:
+    `StaticPortalApi.initializeSession` read an empty sidebar under it while
+    `currentPack()` silently fell back to the last/default pack, and the empty list
+    was then persisted over the fallback pack's saved sidebar. `initializeSession`
+    now re-scopes `storageManager` to the resolved pack whenever the current id does
+    not resolve to a known pack (not just when it is `null`), and `Router.start`
+    rewrites a mismatched short id in the URL to the resolved pack's short id
+    (replace-style), so the address bar agrees with the pack actually loaded.
+  - **PaginatedList / randomize stuck loaders.** `PaginatedList.requestNextPage`
+    reset `isLoading` only on success, so one failed page froze infinite scroll and
+    the load-more button forever; it now resets in the failure path and carries a
+    re-entrancy guard (concurrent calls share the in-flight request instead of both
+    fetching and pushing the same page). `IndexStore.randomizeItems` got the same
+    error-path reset for `isRandomizing`.
+  - **Settings preview no longer fatal.** Previewing a pack in the settings dropdown
+    downloads its `data.json` via `getSettingMods`; a transient failure used to route
+    through `errorStore` and replace the whole app with the fatal-error screen.
+    `SettingsStore.applySelectedSetting` now degrades locally (empty mod list + a new
+    observable `modListError` flag) and `ModList` renders an inline notice
+    (`settings.mod-list.error`, en/de). The notice reinstates the `TextBox`
+    component the dead-code sweep above had removed as importer-less — it has a
+    real consumer again.
+  - **MobX observability gaps.** `SettingsStore.settings` and
+    `TooltipStore.disableFlags` (plain `Map`s read by observers/computeds) are now
+    annotated `observable`.
+  - **Stale-write races.** `ItemStore`, `RecipeStore`, `TechnologyStore` and
+    `SearchStore` guard their async commits with a per-store monotonic request token,
+    so a slow navigation resolving after a newer one can no longer overwrite the newer
+    page or pollute the sidebar's last-viewed list.
+  - **Smaller stuck states.** `GlobalStore.initialize` now awaits the init handlers
+    (`Promise.all`) so a handler rejection reaches the error store and the locale is
+    loaded before `router.start`; `SearchStore` clears `isLoading` when a non-search
+    navigation supersedes a pending search (header spinner no longer sticks); and
+    `IconManager` removes names from `processedEntities` on a failed style fetch so a
+    later request retries instead of blanking those icons until reload.
+  - **Rename.** `ErrorStore.createPaginatesListErrorHandler` →
+    `createPaginatedListErrorHandler` (all call sites updated).
+  - New unit tests cover the unknown-id sidebar preservation, `PaginatedList`'s error
+    path and re-entrancy, and the previously untested `Router.buildPath` (base-path
+    prefix) and `StorageManager` combination scoping.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

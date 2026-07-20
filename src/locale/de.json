@@ -132,6 +132,7 @@
         },
         "mod-list": {
             "author": "Author:",
+            "error": "Die Mod-Liste für dieses Paket konnte nicht geladen werden. Bitte versuche es später erneut.",
             "name": "Name:",
             "version": "Version:"
         },

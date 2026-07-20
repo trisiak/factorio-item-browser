@@ -5,6 +5,7 @@ import { settingsStoreContext } from "../../../store/SettingsStore";
 import { SettingStatus } from "../../../util/const";
 import { getTranslatedSettingName } from "../../../util/setting";
 import Section from "../../common/Section";
+import TextBox from "../../common/TextBox";
 import EntityList from "../../entity/EntityList";
 import Mod from "../../entity/Mod";
 
@@ -16,6 +17,14 @@ const ModList: FC = () => {
 
     if (settingStore.isLoadingMods || setting.status !== SettingStatus.Available) {
         return null;
+    }
+
+    if (settingStore.modListError) {
+        return (
+            <Section headline={t("settings.headline.mod-list", { count: 0, name: getTranslatedSettingName(setting) })}>
+                <TextBox>{t("settings.mod-list.error")}</TextBox>
+            </Section>
+        );
     }
 
     return (

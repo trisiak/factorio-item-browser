@@ -168,9 +168,14 @@ export class StaticPortalApi implements PortalApi {
     public async initializeSession(): Promise<InitData> {
         const pack = this.currentPack();
 
-        // Make sure the storage is scoped before reading from it: on a fresh visit without
-        // a combination id in the URL the sidebar getter would otherwise no-op.
-        if (this.storageManager.combinationId === null) {
+        // Make sure the storage is scoped to the resolved pack before reading from it. On a
+        // fresh visit without a combination id the sidebar getter would otherwise no-op; and
+        // an unknown/stale id in the URL (which currentPack() silently falls back from) would
+        // otherwise leave storage scoped to that phantom id, reading an empty sidebar and
+        // later overwriting the resolved pack's saved sidebar with it.
+        const currentId = this.storageManager.combinationId;
+        const isKnownScope = currentId !== null && findPackByCombinationId(currentId.toFull()) !== null;
+        if (!isKnownScope) {
             this.storageManager.combinationId = CombinationId.fromFull(pack.combinationId);
         }
 
