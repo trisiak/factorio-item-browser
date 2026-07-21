@@ -172,5 +172,8 @@
         "headline": "Alle {{count}} Technologie",
         "headline_plural": "Alle {{count}} Technologien",
         "title": "Alle Technologien - Factorio Item Browser"
+    },
+    "tooltip": {
+        "close": "Schließen"
     }
 }

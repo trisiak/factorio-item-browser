@@ -162,6 +162,30 @@ describe("useLongPress", () => {
         expect(allowed.stopPropagation).not.toHaveBeenCalled();
     });
 
+    test("a new press clears a stale suppression whose click never arrived", () => {
+        const onLongPress = jest.fn();
+        const { result } = renderLongPress(onLongPress, { duration: 500 });
+
+        // A long-press fires, but the finger lifts away from the element (e.g. over the drawer
+        // backdrop), so the suppressed click never reaches the element.
+        act(() => {
+            result.current.onPointerDown(pointerEvent());
+            jest.advanceTimersByTime(500);
+        });
+        expect(onLongPress).toHaveBeenCalledTimes(1);
+
+        // The next tap on the element must behave like a fresh interaction and navigate normally.
+        const click = clickEvent();
+        act(() => {
+            result.current.onPointerDown(pointerEvent());
+            jest.advanceTimersByTime(200);
+            result.current.onPointerUp(pointerEvent());
+            result.current.onClickCapture(click);
+        });
+        expect(click.preventDefault).not.toHaveBeenCalled();
+        expect(click.stopPropagation).not.toHaveBeenCalled();
+    });
+
     test("does not suppress a click when the press was a short tap", () => {
         const onLongPress = jest.fn();
         const { result } = renderLongPress(onLongPress, { duration: 500 });

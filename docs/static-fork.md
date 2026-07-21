@@ -345,6 +345,33 @@ should mirror this checklist and the two must stay reconciled.
   long-press test (dispatched touch pointer events on a 390×844 viewport) asserts the
   tooltip appears and an outside tap dismisses it.
 
+- [x] **Mobile tooltip drawer.** The long-press tooltip inherited the anchored
+  presentation, which broke down on phones: the 24 rem tooltip box was positioned
+  with unclamped math and rendered partly outside a 390 px viewport, and its
+  `pointer-events: none` made everything inside it untappable — dismissing meant
+  finding an empty spot to tap, and the links it showed were dead. Tooltips now
+  have two presentations, selected by trigger via a `mode` field on
+  `TooltipStore.showTooltip` (`useEntityTooltip` wires it): mouse hover and
+  keyboard focus keep the classic **anchored** tooltip, while a touch/pen
+  long-press opens a **drawer** — a bottom sheet (`.tooltip-drawer` in
+  `Tooltip.tsx`) above a dimming backdrop, reusing the same fetched `Entity`
+  content and tooltip coloring. The drawer is fully interactive: the entity head
+  and compact-recipe icons are live links (navigation closes it via the existing
+  route-change handler), it dismisses via backdrop tap, an explicit close button
+  (`tooltip.close` locale key, en/de), the document-level outside-tap listener,
+  or the new Escape-key listener (which also serves the anchored variant); long
+  recipe lists scroll inside the sheet under a sticky entity head, with a
+  slide-up animation disabled under `prefers-reduced-motion`. The anchored
+  variant's positioning is fixed too: the horizontal placement is clamped into
+  the viewport (with an 8 px margin) and the content gets a `calc(100vw - 1rem)`
+  max-width, so narrow-window hover tooltips can no longer render offscreen.
+  `useLongPress` also clears a stale click-suppression on the next pointerdown,
+  so a tap that follows a long-press whose click landed elsewhere (e.g. released
+  over the backdrop) navigates normally. Tests: jest covers the new store mode
+  and the suppression reset; the e2e long-press spec now asserts the drawer stays
+  inside the viewport, closes via button/backdrop, and navigates from its entity
+  link.
+
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
 | PortalApi method | Static behavior against FactorioLab `data.json` |
@@ -397,7 +424,8 @@ to numbers.
   of the rendered UI. Download `playwright-report` from the run and open
   `index.html` to inspect. For a deliberate, curated walk of the key surfaces
   (item list / detail / recipe / search / settings across Vanilla, Space Age
-  and Space Exploration, plus the mobile header/drawer/search/recipe states),
+  and Space Exploration, plus the mobile header/drawer/search/recipe states
+  and the long-press tooltip drawer),
   the **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`) writes
   full-page screenshots to `./screenshots` (gitignored) and attaches them to
   the report. The tour is a separate Playwright project (`--project=tour`),
