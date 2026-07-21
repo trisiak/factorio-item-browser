@@ -166,11 +166,43 @@ should mirror this checklist and the two must stay reconciled.
   New locale keys `recipe-details.unlocked-by` and `technology-details.leads-to`
   (en/de). Verified on desktop and mobile (unit + e2e + tour): recipe → unlocking
   technology, technology → leads-to chain, item "Unlocked by" now last.
-- [ ] **Phase 6d — top-level technology browse (pending).** An "All technologies"
-  top-level page mirroring "All items" (icon grid) — would need a
-  `getTechnologyList` data-layer method plus an `ItemList`-style page/route.
+- [x] **Phase 6d — top-level technology + recipe browse.** Two new top-level pages
+  mirror "All items" as paginated icon grids: **All technologies** (`/technologies`)
+  and **All recipes** (`/recipes`), reachable from new sidebar buttons (faFlask /
+  faIndustry) that highlight on their route the same way "All items" does. Each grid
+  reuses `ItemListIcon` with `type` `"technology"` / `"recipe"` — both are first-class
+  entity types, so hover tooltips and click-through to the detail pages come for free.
+  New stores `TechnologyListStore` / `RecipeListStore` (modelled on `ItemListStore`,
+  registering the routes in their constructors, pulled into the module graph via the
+  new page components in `App.tsx`), new `TechnologyListPage` / `RecipeListPage` +
+  grid components, `RouteName.TechnologyList` / `RouteName.RecipeList`, and locale
+  keys (`sidebar.all-technologies`/`all-recipes`, `technology-list.*`,
+  `recipe-list.*`) in en/de. **Additive data layer:** `transfer.ts` gains
+  `TechnologyListData` (= `ResultsData<TechnologyMetaData>`), `RecipeMetaData` and
+  `RecipeListData` (new types only); the `PortalApi` interface gains
+  `getTechnologyList(page)` / `getRecipeList(page)`, implemented in
+  `StaticPortalApi` → `PackData` and paginated by `Config.numberOfItemsPerPage`, the
+  same page size as the item list. Each ordered meta list is computed once and cached
+  on `PackData` (like `listableItemMetasCache`).
+  - **Recipe order = data-array order**, excluding technology recipes (already
+    filtered out of `PackData.recipes`). FactorioLab's array order follows the game's
+    category/row display grouping, the same rationale as the item list — it is *not*
+    re-sorted alphabetically.
+  - **Technology order = a stable topological sort** of the prerequisites graph
+    (Kahn's algorithm; an edge points prerequisite → technology). Among the
+    technologies currently available (all their known prerequisites already emitted)
+    the next one is the cheapest, where **research cost** is the tuple, taken from the
+    technology's paired same-id research recipe: **(1) research time** (`recipe.time`;
+    `0` for trigger/free techs with no paired recipe), **(2) total science-pack
+    amount** (sum of the recipe's `in` values), **(3) label** (locale compare),
+    **(4) id** (a final, fully deterministic tiebreak). A prerequisite referencing an
+    unknown technology is ignored for availability, and any technologies left
+    unemitted (a prerequisite cycle) are appended in that same ascending-cost order,
+    so the list is always complete and the sort never drops a node or throws. Unit
+    tests (`PackData.lists.test.ts`) cover a diamond dependency, a label-broken cost
+    tie, and a two-node cycle; recipe-list filtering + order is covered too.
   A technology tooltip on the item/prereq boxes (currently only the sidebar hover
-  resolves one) and a `[technology=…]` rich copy template are smaller follow-ups.
+  resolves one) and a `[technology=…]` rich copy template remain smaller follow-ups.
 
 - [x] **Dead-code sweep (backend-era removal).** Removed code left stranded by
   the Phase 4 backend deletion, all verified as zero-usage before removal:
@@ -319,6 +351,8 @@ should mirror this checklist and the two must stay reconciled.
 |---|---|
 | `initializeSession` | Synthesize `InitData` from manifest + localStorage; `status: available`. |
 | `getItemList` | Items array minus `category: "technology"`; type = `"fluid"` when `category === "fluids"`, else `"item"`; paginate in memory. |
+| `getRecipeList` | Recipes array minus technology recipes, in data-array order (the game's category/row display grouping); paginate (Phase 6d). |
+| `getTechnologyList` | Technologies in a stable topological order over the prerequisites graph, ties broken by ascending research cost (time, then total science-pack amount, then label, then id); cycles/missing prerequisites appended deterministically; paginate (Phase 6d). |
 | `getItemIngredientRecipes` | Recipes where the item id is a key of `in`; paginate. |
 | `getItemProductRecipes` | Recipes where the item id is a key of `out`; paginate. |
 | `getRecipeDetails` | Recipe by id; `craftingTime = time`; `description: ""` (schema has none); no expensive mode. |

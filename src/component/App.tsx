@@ -16,9 +16,11 @@ import IndexPage from "./page/IndexPage";
 import ItemDetailsPage from "./page/ItemDetailsPage";
 import ItemListPage from "./page/ItemListPage";
 import RecipeDetailsPage from "./page/RecipeDetailsPage";
+import RecipeListPage from "./page/RecipeListPage";
 import SearchResultsPage from "./page/SearchResultsPage";
 import SettingsPage from "./page/SettingsPage";
 import TechnologyDetailsPage from "./page/TechnologyDetailsPage";
+import TechnologyListPage from "./page/TechnologyListPage";
 
 import "./App.scss";
 
@@ -27,9 +29,11 @@ const PAGE_BY_ROUTES: { [key: string]: ReactNode } = {
     [RouteName.ItemDetails]: <ItemDetailsPage />,
     [RouteName.ItemList]: <ItemListPage />,
     [RouteName.RecipeDetails]: <RecipeDetailsPage />,
+    [RouteName.RecipeList]: <RecipeListPage />,
     [RouteName.Search]: <SearchResultsPage />,
     [RouteName.Settings]: <SettingsPage />,
     [RouteName.TechnologyDetails]: <TechnologyDetailsPage />,
+    [RouteName.TechnologyList]: <TechnologyListPage />,
 };
 
 /**

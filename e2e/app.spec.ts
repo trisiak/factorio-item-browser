@@ -251,6 +251,47 @@ test.describe("touch long-press tooltips", () => {
     });
 });
 
+test.describe("list grids", () => {
+    test("the recipe grid renders icons and clicking one opens the recipe page", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
+
+        await page.goto(`/${shortId}/recipes`);
+        // The grid holds recipe icons — many of them for vanilla.
+        await expect(page.locator("a[href*='/recipe/']").first()).toBeVisible();
+        expect(await page.locator("a[href*='/recipe/']").count()).toBeGreaterThan(50);
+
+        await page.locator("a[href*='/recipe/']").first().click();
+        await expect(page).toHaveURL(/\/recipe\//);
+        await expect(page.locator("h1")).toContainText(/Recipe:/);
+    });
+
+    test("the technology grid renders icons and clicking one opens the technology page", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
+
+        await page.goto(`/${shortId}/technologies`);
+        await expect(page.locator("a[href*='/technology/']").first()).toBeVisible();
+        expect(await page.locator("a[href*='/technology/']").count()).toBeGreaterThan(20);
+
+        await page.locator("a[href*='/technology/']").first().click();
+        await expect(page).toHaveURL(/\/technology\//);
+        await expect(page.locator("h1")).toContainText(/Technology:/);
+    });
+
+    test("the sidebar buttons navigate to the recipe and technology grids", async ({ page }) => {
+        await gotoItemList(page);
+
+        await page.locator(".sidebar-button", { hasText: "All recipes" }).click();
+        await expect(page).toHaveURL(/\/recipes/);
+        await expect(page.locator("a[href*='/recipe/']").first()).toBeVisible();
+
+        await page.locator(".sidebar-button", { hasText: "All technologies" }).click();
+        await expect(page).toHaveURL(/\/technologies/);
+        await expect(page.locator("a[href*='/technology/']").first()).toBeVisible();
+    });
+});
+
 test.describe("technology", () => {
     test("item links to its unlocking technology, whose page is traversable", async ({ page }) => {
         await gotoItemList(page);

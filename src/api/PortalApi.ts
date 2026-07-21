@@ -12,12 +12,14 @@ import {
     ItemType,
     ModData,
     RecipeDetailsData,
+    RecipeListData,
     RecipeMachinesData,
     SearchResultsData,
     SettingData,
     SettingOptionsData,
     SidebarEntityData,
     TechnologyData,
+    TechnologyListData,
 } from "./transfer";
 
 /**
@@ -38,6 +40,8 @@ export interface PortalApi {
     getItemResearch(type: ItemType, name: string): Promise<ItemResearchData>;
     getTechnology(name: string): Promise<TechnologyData>;
     getItemList(page: number): Promise<ItemListData>;
+    getTechnologyList(page: number): Promise<TechnologyListData>;
+    getRecipeList(page: number): Promise<RecipeListData>;
     getRandom(): Promise<EntityData[]>;
     getRecipeDetails(name: string): Promise<RecipeDetailsData>;
     getRecipeResearch(name: string): Promise<TechnologyData[]>;

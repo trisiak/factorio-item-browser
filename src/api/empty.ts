@@ -4,13 +4,25 @@ import {
     ItemRecipesData,
     ItemResearchData,
     RecipeDetailsData,
+    RecipeListData,
     RecipeMachinesData,
     SearchResultsData,
     SettingData,
     TechnologyData,
+    TechnologyListData,
 } from "./transfer";
 
 export const emptyItemListData: ItemListData = {
+    results: [],
+    numberOfResults: 0,
+};
+
+export const emptyTechnologyListData: TechnologyListData = {
+    results: [],
+    numberOfResults: 0,
+};
+
+export const emptyRecipeListData: RecipeListData = {
     results: [],
     numberOfResults: 0,
 };
