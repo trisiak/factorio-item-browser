@@ -132,6 +132,7 @@
         },
         "mod-list": {
             "author": "Author:",
+            "error": "The mod list for this pack could not be loaded. Please try again later.",
             "name": "Name:",
             "version": "Version:"
         },

@@ -14,6 +14,9 @@ export class PaginatedList<TEntity, TData extends ResultsData<TEntity>> {
     public currentPage = 0;
     public isLoading = false;
 
+    /** The in-flight request, if any, so concurrent calls share it instead of duplicating a page. */
+    private pendingRequest: Promise<TData> | null = null;
+
     public constructor(dataFetcher: DataFetcher<TData>, errorHandler: ErrorHandler<TData>) {
         this.dataFetcher = dataFetcher;
         this.errorHandler = errorHandler;
@@ -32,20 +35,39 @@ export class PaginatedList<TEntity, TData extends ResultsData<TEntity>> {
         return this.results.length < this.numberOfResults;
     }
 
-    public async requestNextPage(): Promise<TData> {
+    public requestNextPage(): Promise<TData> {
+        // Re-entrancy guard: while a page is loading, hand back the in-flight request so two
+        // concurrent calls don't both fetch (and push) the same next page.
+        if (this.pendingRequest) {
+            return this.pendingRequest;
+        }
+
         this.isLoading = true;
+        const newPage = this.currentPage + 1;
+        const request = this.fetchPage(newPage);
+        this.pendingRequest = request;
+        return request;
+    }
+
+    private async fetchPage(newPage: number): Promise<TData> {
         try {
-            const newPage = this.currentPage + 1;
             const data = await this.dataFetcher(newPage);
             return runInAction((): TData => {
                 this.isLoading = false;
+                this.pendingRequest = null;
                 this.currentPage = newPage;
                 this.results.push(...data.results);
                 this.numberOfResults = data.numberOfResults;
                 return data;
             });
         } catch (e) {
-            return this.errorHandler(e as PageError);
+            // Reset the loading state before delegating, otherwise a failed page leaves
+            // infinite scroll and the load-more button stuck forever.
+            return runInAction((): TData => {
+                this.isLoading = false;
+                this.pendingRequest = null;
+                return this.errorHandler(e as PageError);
+            });
         }
     }
 }

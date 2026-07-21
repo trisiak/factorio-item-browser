@@ -2,6 +2,7 @@ import { CombinationId } from "../../class/CombinationId";
 import { StorageManager } from "../../class/StorageManager";
 import { PageNotFoundError } from "../../error/page";
 import { SettingStatus } from "../../util/const";
+import { SidebarEntityData } from "../transfer";
 import { clearPackDataCache, StaticPortalApi } from "./StaticPortalApi";
 import { FactorioLabData } from "./factoriolab";
 import { packs } from "./packs";
@@ -148,6 +149,35 @@ describe("StaticPortalApi", (): void => {
         const freshApi = new StaticPortalApi(new StorageManager(window.localStorage));
         const initData = await freshApi.initializeSession();
         expect(initData.setting.combinationId).toBe(packs[1].combinationId);
+    });
+
+    test("an unknown combination id re-scopes to the fallback pack, preserving its sidebar", async (): Promise<void> => {
+        const sidebar: SidebarEntityData[] = [
+            {
+                type: "item",
+                name: "widget",
+                label: "Widget",
+                pinnedPosition: 0,
+                lastViewTime: "2020-01-01T00:00:00.000Z",
+            },
+        ];
+
+        // Store a sidebar under the default pack (packs[0]) scope.
+        storageManager.combinationId = CombinationId.fromFull(packs[0].combinationId);
+        storageManager.sidebarEntities = sidebar;
+
+        // Simulate a visit carrying a well-formed but unknown/stale combination id, the way
+        // GlobalStore.detectInitialCombinationId would scope storage from the URL.
+        storageManager.combinationId = CombinationId.fromFull("00000000-0000-4000-8000-0000deadbeef");
+
+        const initData = await api.initializeSession();
+
+        // The session resolves to the fallback pack and, crucially, re-scopes storage to it
+        // before reading, so the fallback pack's saved sidebar survives instead of being
+        // read (and later overwritten) as an empty list under the phantom id.
+        expect(initData.setting.combinationId).toBe(packs[0].combinationId);
+        expect(initData.sidebarEntities).toEqual(sidebar);
+        expect(storageManager.combinationId?.toFull()).toBe(packs[0].combinationId);
     });
 
     test("getItemList excludes technologies, dummies and orphans, and types fluids", async (): Promise<void> => {

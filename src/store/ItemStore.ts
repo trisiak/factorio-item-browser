@@ -29,6 +29,9 @@ export class ItemStore {
     private readonly portalApi: PortalApi;
     private readonly sidebarStore: SidebarStore;
 
+    /** Monotonic token identifying the latest navigation, so a slow request cannot overwrite a newer one. */
+    private currentRequestId = 0;
+
     /** The item details to be shown. */
     public item: Item = emptyItem;
     /** The paginated list of recipes having the item as ingredient. */
@@ -59,20 +62,21 @@ export class ItemStore {
 
     private async handleRouteChange(state: State): Promise<void> {
         const { type, name } = state.params;
+        const requestId = ++this.currentRequestId;
 
         const newProductsList = new PaginatedList<EntityData, ItemRecipesData>(
             (page) => this.portalApi.getItemProductRecipes(type, name, page),
-            this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
+            this.errorStore.createPaginatedListErrorHandler(emptyItemRecipesData),
         );
         const newIngredientsList = new PaginatedList<EntityData, ItemRecipesData>(
             (page) => this.portalApi.getItemIngredientRecipes(type, name, page),
-            this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
+            this.errorStore.createPaginatedListErrorHandler(emptyItemRecipesData),
         );
         // Populated for every item; only machines produce a non-empty list, so the section
         // hides itself for everything else (see ItemRecipesList).
         const newMachineRecipesList = new PaginatedList<EntityData, ItemRecipesData>(
             (page) => this.portalApi.getMachineRecipes(type, name, page),
-            this.errorStore.createPaginatesListErrorHandler(emptyItemRecipesData),
+            this.errorStore.createPaginatedListErrorHandler(emptyItemRecipesData),
         );
 
         // The research lookup is best-effort: a failure (or a data source without technology
@@ -88,6 +92,12 @@ export class ItemStore {
             newMachineRecipesList.requestNextPage(),
             researchPromise,
         ]);
+
+        // A newer navigation started while this one was in flight; discard the stale result
+        // so it cannot overwrite the newer page or pollute the sidebar's last-viewed list.
+        if (requestId !== this.currentRequestId) {
+            return;
+        }
 
         if (productsData.name !== "") {
             runInAction(() => {

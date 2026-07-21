@@ -61,7 +61,10 @@ abstract class AbstractIconManager {
                 const processedEntities = await this.requestStyleForEntities(entities);
                 this.processedEntities.merge(processedEntities);
             } catch (e) {
-                // Ignore any failures while loading icons.
+                // The names were pre-added to processedEntities for de-duping concurrent
+                // requests; a failed fetch would otherwise blank those icons permanently.
+                // Remove them so a later request retries instead.
+                this.processedEntities.diff(entities);
             }
         })();
     }

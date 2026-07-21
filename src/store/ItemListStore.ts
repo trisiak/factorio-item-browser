@@ -25,7 +25,7 @@ export class ItemListStore {
 
         this.paginatedItemList = new PaginatedList(
             (page) => this.portalApi.getItemList(page),
-            this.errorStore.createPaginatesListErrorHandler(emptyItemListData),
+            this.errorStore.createPaginatedListErrorHandler(emptyItemListData),
         );
 
         router.addRoute(RouteName.ItemList, "/items", this.handleRouteChange.bind(this));

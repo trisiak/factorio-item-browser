@@ -53,6 +53,11 @@ export class IndexStore {
                 this.randomItems = randomItems;
             });
         } catch (e) {
+            // Reset the flag before delegating, otherwise a failed randomize permanently
+            // disables the button.
+            runInAction((): void => {
+                this.isRandomizing = false;
+            });
             this.errorStore.handleError(e as PageError);
         }
     }

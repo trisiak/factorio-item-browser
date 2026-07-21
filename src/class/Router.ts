@@ -83,6 +83,21 @@ export class Router {
                         },
                         { replace: true },
                     );
+                } else if (
+                    state.params[PARAM_COMBINATION_ID] &&
+                    state.params[PARAM_COMBINATION_ID] !== combinationId.toShort()
+                ) {
+                    // The URL carried a well-formed short id that does not match the resolved
+                    // pack (an unknown or stale combination id). Rewrite it so the address bar
+                    // agrees with the pack actually loaded, replacing the entry to keep history clean.
+                    this.router.navigate(
+                        state.name,
+                        {
+                            ...state.params,
+                            [PARAM_COMBINATION_ID]: combinationId.toShort(),
+                        },
+                        { replace: true },
+                    );
                 }
             }
         });

@@ -16,6 +16,9 @@ export class SearchStore {
     private readonly router: Router;
     private readonly debouncedHandleQueryChange: (query: string) => Promise<void>;
 
+    /** Monotonic token identifying the latest search navigation, so a slow one cannot overwrite a newer one. */
+    private currentRequestId = 0;
+
     /** Whether the input field is currently focused. */
     public isInputFocused = false;
     /** The current search query entered into the search field. */
@@ -57,12 +60,20 @@ export class SearchStore {
 
     private async handleRouteChange(state: State): Promise<void> {
         const { query } = state.params;
+        const requestId = ++this.currentRequestId;
         const newPaginatedList = new PaginatedList<EntityData, SearchResultsData>(
             (page) => this.portalApi.search(query, page),
-            this.errorStore.createPaginatesListErrorHandler(emptySearchResultsData),
+            this.errorStore.createPaginatedListErrorHandler(emptySearchResultsData),
         );
 
         const searchResultsData = await newPaginatedList.requestNextPage();
+
+        // A newer search navigation superseded this one while it was in flight; discard the
+        // stale result so it cannot overwrite the newer results.
+        if (requestId !== this.currentRequestId) {
+            return;
+        }
+
         runInAction(() => {
             this.paginatedSearchResults = newPaginatedList;
             this.currentlyExecutedQuery = searchResultsData.query;
@@ -75,9 +86,16 @@ export class SearchStore {
     }
 
     private handleGlobalRouteChange(state: State) {
-        if (state.name !== RouteName.Search && !this.isInputFocused) {
-            this.searchQuery = "";
-            this.requestedSearchQuery = "";
+        if (state.name !== RouteName.Search) {
+            // Navigating away from the search route: no search is pending, so clear the
+            // loading state that handleQueryChange set, otherwise the header spinner sticks
+            // when this navigation superseded a search.
+            this.isLoading = false;
+
+            if (!this.isInputFocused) {
+                this.searchQuery = "";
+                this.requestedSearchQuery = "";
+            }
         }
     }
 

@@ -18,7 +18,8 @@ export class TooltipStore {
     public constructor(portalApi: PortalApi, router: Router) {
         this.portalApi = portalApi;
 
-        makeObservable(this, {
+        makeObservable<this, "disableFlags">(this, {
+            disableFlags: observable,
             isEnabled: computed,
             fetchedData: observable,
             fetchedTarget: observable,

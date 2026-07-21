@@ -15,6 +15,9 @@ export class TechnologyStore {
     private readonly portalApi: PortalApi;
     private readonly sidebarStore: SidebarStore;
 
+    /** Monotonic token identifying the latest navigation, so a slow request cannot overwrite a newer one. */
+    private currentRequestId = 0;
+
     /** The technology details to be shown. */
     public technology: TechnologyData = emptyTechnologyData;
 
@@ -33,9 +36,16 @@ export class TechnologyStore {
 
     private async handleRouteChange(state: State): Promise<void> {
         const { name } = state.params;
+        const requestId = ++this.currentRequestId;
 
         try {
             const technology = await this.portalApi.getTechnology(name);
+
+            // A newer navigation started while this one was in flight; discard the stale
+            // result so it cannot overwrite the newer page or pollute the sidebar.
+            if (requestId !== this.currentRequestId) {
+                return;
+            }
 
             runInAction((): void => {
                 this.technology = technology;

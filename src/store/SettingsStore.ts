@@ -33,6 +33,8 @@ export class SettingsStore {
     public selectedSettingMods: ModData[] = [];
     /** Whether we are currently loading the mods of the setting. */
     public isLoadingMods = false;
+    /** Whether loading the mods of the selected setting failed (rendered as an inline notice). */
+    public modListError = false;
     /** Whether we are currently changing to a new setting. */
     public isChangingToSetting = false;
     /** Whether we are currently saving the changes. */
@@ -62,11 +64,13 @@ export class SettingsStore {
             isLoadingMods: observable,
             isSaveButtonVisible: computed,
             isSavingChanges: observable,
+            modListError: observable,
             saveOptions: action,
             selectedOptions: observable,
             selectedSetting: computed,
             selectedSettingMods: observable,
             selectedCombinationId: observable,
+            settings: observable,
         });
 
         globalStore.addInitHandler(this.handleInit.bind(this));
@@ -172,6 +176,7 @@ export class SettingsStore {
 
         this.selectedSettingMods = [];
         this.isLoadingMods = false;
+        this.modListError = false;
 
         if (selectedSetting.status === SettingStatus.Available) {
             this.isLoadingMods = true;
@@ -182,7 +187,14 @@ export class SettingsStore {
                     this.isLoadingMods = false;
                 });
             } catch (e) {
-                this.errorStore.handleError(e as PageError);
+                // Merely previewing a pack downloads its data; a transient failure must not
+                // escalate to a full-screen fatal error and destroy the working session.
+                // Degrade gracefully and surface an inline notice in the mod list instead.
+                runInAction(() => {
+                    this.selectedSettingMods = [];
+                    this.isLoadingMods = false;
+                    this.modListError = true;
+                });
             }
         }
     }

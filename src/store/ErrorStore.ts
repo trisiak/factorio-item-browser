@@ -51,7 +51,7 @@ export class ErrorStore {
      * Creates an error handler to be used with a paginated list.
      * @param emptyData The empty data to return in case of an error.
      */
-    public createPaginatesListErrorHandler<T>(emptyData: T): (error: PageError) => T {
+    public createPaginatedListErrorHandler<T>(emptyData: T): (error: PageError) => T {
         return (error) => {
             this.handleError(error);
             return emptyData;

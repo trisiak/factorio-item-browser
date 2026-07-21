@@ -16,6 +16,9 @@ export class RecipeStore {
     private readonly portalApi: PortalApi;
     private readonly sidebarStore: SidebarStore;
 
+    /** Monotonic token identifying the latest navigation, so a slow request cannot overwrite a newer one. */
+    private currentRequestId = 0;
+
     /** The recipe details to be shown. */
     public recipeDetails: RecipeDetailsData = emptyRecipeDetailsData;
     /** The paginated list of machines to show. */
@@ -40,10 +43,11 @@ export class RecipeStore {
 
     private async handleRouteChange(state: State): Promise<void> {
         const { name } = state.params;
+        const requestId = ++this.currentRequestId;
 
         const newMachinesList = new PaginatedList<MachineData, RecipeMachinesData>(
             (page) => this.portalApi.getRecipeMachines(name, page),
-            this.errorStore.createPaginatesListErrorHandler(emptyRecipeMachinesData),
+            this.errorStore.createPaginatedListErrorHandler(emptyRecipeMachinesData),
         );
 
         // Best-effort like the item page: a failure (or a data source without technology
@@ -56,6 +60,12 @@ export class RecipeStore {
                 newMachinesList.requestNextPage(),
                 researchPromise,
             ]);
+
+            // A newer navigation started while this one was in flight; discard the stale
+            // result so it cannot overwrite the newer page or pollute the sidebar.
+            if (requestId !== this.currentRequestId) {
+                return;
+            }
 
             runInAction((): void => {
                 this.recipeDetails = recipeDetails;

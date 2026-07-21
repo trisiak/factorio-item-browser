@@ -100,9 +100,9 @@ export class GlobalStore {
                 const combinationId = CombinationId.fromFull(initData.setting.combinationId);
                 this.storageManager.combinationId = combinationId;
 
-                for (const handler of this.initHandlers) {
-                    handler(initData);
-                }
+                // Await the handlers: some return promises (e.g. loading the locale before the
+                // router starts), and a rejection must reach the error store below.
+                await Promise.all(this.initHandlers.map((handler) => handler(initData)));
 
                 this.router.start(combinationId);
             } else {
