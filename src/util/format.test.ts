@@ -65,14 +65,16 @@ describe("format", (): void => {
             [0, "none"],
             [255, "unlimited"],
         ])("%d", (slots: number, expectedResult: string): void => {
-            const mockedFunction: TFunction = (key: string): string => {
+            const mockedFunction = (key: string): string => {
                 const values: { [key: string]: string } = {
                     "recipe-details.machine.none": "none",
                     "recipe-details.machine.unlimited": "unlimited",
                 };
                 return values[key] || "";
             };
-            jest.spyOn(i18next, "t").mockImplementation(mockedFunction);
+            // i18next's TFunction is a heavily overloaded, branded type; the test only
+            // needs the plain (key) => string behaviour, so cast the stub through unknown.
+            jest.spyOn(i18next, "t").mockImplementation(mockedFunction as unknown as TFunction);
 
             const result = formatMachineSlots(slots);
 

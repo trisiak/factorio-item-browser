@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import React, { ForwardRefRenderFunction, ReactNode, useCallback, useContext, useRef } from "react";
+import React, { ForwardRefRenderFunction, MouseEvent, ReactNode, useCallback, useContext, useRef } from "react";
 import { RouteParams } from "../../class/Router";
 import { globalStoreContext } from "../../store/GlobalStore";
 import { RouteName } from "../../util/const";
@@ -21,7 +21,7 @@ const Link: ForwardRefRenderFunction<HTMLAnchorElement, Props> = ({ route, param
     ref = ref || useRef<HTMLAnchorElement>(null);
 
     const handleClick = useCallback(
-        (event) => {
+        (event: MouseEvent<HTMLAnchorElement>) => {
             event.preventDefault();
             event.stopPropagation();
             if (!globalStore.router.isActive(route, params)) {

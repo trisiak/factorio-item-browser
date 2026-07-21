@@ -379,6 +379,44 @@ to numbers.
   onto an asset contenthash), and `e2e/server.js` gained `.svg`/`.webp` MIME
   types and a tightened `startsWith(BUILD + path.sep)` containment check.
 
+- [x] **Toolchain modernization (core wave + React 18).** The Babel + webpack 5
+  pipeline is unchanged (no Vite/swc), but the surrounding toolchain moved to
+  current majors. **Core wave:** TypeScript `4.2` → `5.9`; `@typescript-eslint/*`
+  `4` → `8`; ESLint `7` → `9` with a **flat config** (`eslint.config.js` replaces
+  `.eslintrc`) that ports the old rule intent 1:1 (`eslint:recommended`,
+  `react/recommended`, `@typescript-eslint/recommended`, `import` warnings,
+  `jest/recommended` scoped to `*.test.*`, `prettier`, plus the same explicit
+  overrides — `explicit-member-accessibility`, `no-unused-vars` with
+  `argsIgnorePattern: "^_"`, `import/order`, `no-constant-condition` loops-off,
+  `react/prop-types: 0`); Jest `27` → `30` (with the now-separate
+  `jest-environment-jsdom`), `@types/jest` to match; Prettier `2` → `3`
+  (+ `eslint-plugin-prettier` `5` / `eslint-config-prettier` `10`). The ESLint
+  `--ext` CLI flag is gone under flat config — `test-eslint`/`fix` scripts drop it
+  and the flat config's `files: ["**/*.{ts,tsx}"]` selects the same set. The
+  **webpack import resolver did not survive** the flat-config move
+  (`eslint-import-resolver-webpack` is aria/eslintrc-only); it was replaced with
+  `eslint-import-resolver-typescript`, so `import/no-unresolved` and friends keep
+  working. `@typescript-eslint` v8 defaults `no-unused-vars`'s `caughtErrors` to
+  `"all"`; set back to `"none"` to preserve prior behaviour (unused `catch (e)`
+  bindings were not flagged before). **React 18 wave:** `react`/`react-dom`
+  `17` → `18`, `@types/react`/`@types/react-dom` → `18`; `src/index.tsx` switched
+  from `ReactDOM.render` to `createRoot(...).render` (StrictMode intentionally
+  **not** enabled — matching current runtime behaviour wins); `mobx-react-lite`
+  `3` → `4` (no `observerBatching`/batching config existed to drop);
+  `react-responsive` `8` → `10` (its bundled types made the `@types/react-responsive`
+  stub obsolete — removed); `react-i18next` `11` → `15` + `i18next` `20` → `25`
+  (current majors compatible with React 18; `react-i18next` 16/17 target the
+  React 19 / i18next 26 era and were deliberately not taken); `react-sortablejs`
+  stays `^6.1.4`, `sortablejs` patch-bumped to `^1.15.7`. Only two real type
+  errors surfaced: an implicit-`any` click handler param in `Link.tsx` (now typed
+  `MouseEvent<HTMLAnchorElement>`) and the branded `TFunction` in `format.test.ts`
+  (the stub is cast through `unknown`). `@types/react` 18 drops implicit
+  `children` from `React.FC`, but every component here already declared
+  `children` explicitly, so no widening was needed. The stale
+  `overrides.@types/babel__traverse` pin was removed. Verified end-to-end: plain
+  `npm ci`, `npm test` (tsc + 86 jest tests + eslint), `npm run build`, the
+  Playwright e2e suite, and a manual `npm start` smoke check all green.
+
 ## FactorioLab sxp (Space Exploration) quirk inventory
 
 Full audit of `factoriolab.github.io/data/sxp/data.json` (2026-07-18), so sxp
