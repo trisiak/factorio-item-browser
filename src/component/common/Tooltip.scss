@@ -141,7 +141,8 @@
         right: 0;
         top: 0;
         width: $tooltip-chevron-size;
-        z-index: $zIndex-icon;
+        // Above the sticky entity head, which would otherwise intercept the taps.
+        z-index: $zIndex-icon + 1;
 
         &:focus-visible {
             outline: 2px solid currentColor;
