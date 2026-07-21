@@ -32,10 +32,10 @@ fetches its pack data from published URLs at runtime.
 
 ## Development
 
-Node 22 (CI matches). The install needs the legacy peer flag:
+Node 22 (CI matches):
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 
 npm start          # dev server
 npm test           # tsc + jest + eslint

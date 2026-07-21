@@ -48,11 +48,10 @@ has the full method-by-method mapping.
 
 ## Commands
 
-Node 22 (CI matches). Install needs the legacy peer flag — a plain
-`npm install` fails on react-sortablejs's react@16 peer pin:
+Node 22 (CI matches). A plain install works:
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
 
 | Task | Command |
