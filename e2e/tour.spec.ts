@@ -232,4 +232,46 @@ test.describe("visual tour — mobile", () => {
         await waitForIcons(page);
         await shot(page, testInfo, "mobile-technology-detail");
     });
+
+    test.describe("touch", () => {
+        test.use({ hasTouch: true });
+
+        test("long-press tooltip drawer", async ({ page }, testInfo) => {
+            await gotoItemList(page, PACKS.vanilla);
+            await waitForIcons(page);
+
+            // Electronic circuit has recipes, so the drawer shows the full entity shape:
+            // head link, compact recipe rows and the close button.
+            const icon = page.locator("a[href$='/item/electronic-circuit']");
+            await icon.scrollIntoViewIfNeeded();
+            await icon.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 });
+            await expect(page.locator(".tooltip-drawer .sheet")).toBeVisible({ timeout: 10000 });
+            await icon.dispatchEvent("pointerup", { pointerType: "touch", clientX: 20, clientY: 20 });
+
+            // Wait for the slide-in to finish (sheet docked to the bottom edge) and for the
+            // drawer's own entity icons to paint, otherwise the shot catches it mid-animation
+            // or with blank tiles.
+            await expect
+                .poll(async () => {
+                    const viewport = page.viewportSize();
+                    const sheet = await page.locator(".tooltip-drawer .sheet").boundingBox();
+                    return sheet && viewport ? sheet.y + sheet.height - viewport.height : Number.MAX_SAFE_INTEGER;
+                })
+                .toBeLessThanOrEqual(1);
+            await expect
+                .poll(
+                    () =>
+                        page.evaluate(() =>
+                            Array.from(document.querySelectorAll(".tooltip-drawer .icon")).some((el) =>
+                                getComputedStyle(el).backgroundImage.includes("icons.webp"),
+                            ),
+                        ),
+                    { timeout: 20000 },
+                )
+                .toBe(true);
+
+            // Viewport-only: the drawer is a fixed overlay over the scrollable item grid.
+            await shot(page, testInfo, "mobile-tooltip-drawer", { fullPage: false });
+        });
+    });
 });

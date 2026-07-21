@@ -424,7 +424,8 @@ to numbers.
   of the rendered UI. Download `playwright-report` from the run and open
   `index.html` to inspect. For a deliberate, curated walk of the key surfaces
   (item list / detail / recipe / search / settings across Vanilla, Space Age
-  and Space Exploration, plus the mobile header/drawer/search/recipe states),
+  and Space Exploration, plus the mobile header/drawer/search/recipe states
+  and the long-press tooltip drawer),
   the **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`) writes
   full-page screenshots to `./screenshots` (gitignored) and attaches them to
   the report. The tour is a separate Playwright project (`--project=tour`),
