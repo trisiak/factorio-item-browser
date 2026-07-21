@@ -238,8 +238,8 @@ export class PackData {
             side === "ingredient"
                 ? this.recipeIdsByIngredient
                 : side === "product"
-                ? this.recipeIdsByProduct
-                : this.recipeIdsByProducer;
+                  ? this.recipeIdsByProduct
+                  : this.recipeIdsByProducer;
         // Slice the id list to the requested page first, then build entities only for that
         // page — the full match set can be large, and each entity expands several recipes.
         const recipeIds = map.get(item.id) || [];
