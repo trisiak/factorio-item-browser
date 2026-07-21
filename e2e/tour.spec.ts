@@ -241,8 +241,9 @@ test.describe("visual tour — mobile", () => {
             await waitForIcons(page);
 
             // Electronic circuit has recipes, so the drawer shows the full entity shape:
-            // head link, compact recipe rows and the close button.
-            const icon = page.locator("a[href$='/item/electronic-circuit']");
+            // head link, compact recipe rows and the close button. Scoped to the grid tile
+            // (.icon.large) because the opened drawer adds more links to the same item.
+            const icon = page.locator("a.icon.large[href$='/item/electronic-circuit']");
             await icon.scrollIntoViewIfNeeded();
             await icon.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 });
             await expect(page.locator(".tooltip-drawer .sheet")).toBeVisible({ timeout: 10000 });
