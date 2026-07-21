@@ -211,6 +211,29 @@ describe("StaticPortalApi", (): void => {
         expect(names).not.toContain("residue");
     });
 
+    test("getRecipeList keeps data order and excludes technology recipes", async (): Promise<void> => {
+        const list = await api.getRecipeList(1);
+
+        // Only the two non-technology recipes, in their data-array order.
+        expect(list.results).toEqual([
+            { name: "gizmo-recipe", label: "Gizmo" },
+            { name: "doubler-recipe", label: "Doubler" },
+        ]);
+        expect(list.numberOfResults).toBe(2);
+    });
+
+    test("getTechnologyList topologically orders technologies", async (): Promise<void> => {
+        const list = await api.getTechnologyList(1);
+
+        // widget-tech (a trigger tech with no research cost) is a prerequisite of mining-tech,
+        // so it must come first.
+        expect(list.results).toEqual([
+            { name: "widget-tech", label: "Widget technology" },
+            { name: "mining-tech", label: "Mining technology" },
+        ]);
+        expect(list.numberOfResults).toBe(2);
+    });
+
     test("dummy and orphaned items stay resolvable by direct reference", async (): Promise<void> => {
         const dummy = await api.getTooltip("item", "thing-dummy-item");
         expect(dummy.label).toBe("Thing (Hidden)");

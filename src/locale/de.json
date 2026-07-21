@@ -82,6 +82,11 @@
         "headline": "Alle {{count}} Items and Flüssigkeiten",
         "title": "Alle Items - Factorio Item Browser"
     },
+    "recipe-list": {
+        "headline": "Alle {{count}} Rezept",
+        "headline_plural": "Alle {{count}} Rezepte",
+        "title": "Alle Rezepte - Factorio Item Browser"
+    },
     "recipe-details": {
         "headline": "Rezept: {{label}}",
         "ingredients": "Zutaten",
@@ -146,6 +151,8 @@
         "action-pin": "Element oben anheften",
         "action-unpin": "Element von oben lösen",
         "all-items": "Alle Items",
+        "all-recipes": "Alle Rezepte",
+        "all-technologies": "Alle Technologien",
         "close": "Menü schließen",
         "headline-last-viewed": "Zuletzt angesehen",
         "headline-pinned": "Angeheftet",
@@ -160,5 +167,10 @@
         "title": "Technologie: {{label}} - Factorio Item Browser",
         "unlocks": "Schaltet {{count}} Rezept frei",
         "unlocks_plural": "Schaltet {{count}} Rezepte frei"
+    },
+    "technology-list": {
+        "headline": "Alle {{count}} Technologie",
+        "headline_plural": "Alle {{count}} Technologien",
+        "title": "Alle Technologien - Factorio Item Browser"
     }
 }

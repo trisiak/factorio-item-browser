@@ -10,10 +10,13 @@ import {
     RecipeData,
     RecipeDetailsData,
     RecipeItemData,
+    RecipeListData,
     RecipeMachinesData,
+    RecipeMetaData,
     ResultsData,
     SearchResultsData,
     TechnologyData,
+    TechnologyListData,
     TechnologyMetaData,
 } from "../transfer";
 import {
@@ -58,6 +61,9 @@ export class PackData {
     private readonly listableItems: FactorioLabItem[];
     // The item-list meta array is the same on every call; build it once, lazily.
     private listableItemMetasCache?: ItemMetaData[];
+    // The recipe- and technology-list meta arrays, likewise built once, lazily.
+    private recipeMetasCache?: RecipeMetaData[];
+    private technologyMetasCache?: TechnologyMetaData[];
 
     // Technology data, indexed but never added to the browsable lists above. A technology is
     // an item (category "technology", carrying the technology sub-object) paired with a
@@ -227,6 +233,130 @@ export class PackData {
 
     public getItemList(page: number): ItemListData {
         return this.paginate(this.listableItemMetas(), page, Config.numberOfItemsPerPage);
+    }
+
+    private recipeMetas(): RecipeMetaData[] {
+        if (!this.recipeMetasCache) {
+            // Data-array order (the technology recipes are already filtered out of
+            // `this.recipes`): FactorioLab's order follows the game's category/row
+            // display grouping, the same rationale as the item list — do not re-sort.
+            this.recipeMetasCache = this.recipes.map((recipe) => ({
+                name: recipe.id,
+                label: recipe.name,
+            }));
+        }
+        return this.recipeMetasCache;
+    }
+
+    public getRecipeList(page: number): RecipeListData {
+        return this.paginate(this.recipeMetas(), page, Config.numberOfItemsPerPage);
+    }
+
+    private technologyMetas(): TechnologyMetaData[] {
+        if (!this.technologyMetasCache) {
+            this.technologyMetasCache = this.orderedTechnologies().map((technology) => ({
+                name: technology.id,
+                label: technology.name,
+            }));
+        }
+        return this.technologyMetasCache;
+    }
+
+    public getTechnologyList(page: number): TechnologyListData {
+        return this.paginate(this.technologyMetas(), page, Config.numberOfItemsPerPage);
+    }
+
+    /**
+     * The order technologies are listed in: a stable topological sort of the prerequisites
+     * graph (an edge points prerequisite → technology), so a technology never appears before
+     * any of its prerequisites. Kahn's algorithm drives it; among the technologies that are
+     * currently available (all their known prerequisites already emitted) the next one is the
+     * cheapest, where research cost is defined pragmatically from the technology's paired
+     * same-id research recipe as the tuple:
+     *   1. research time (`recipe.time`; 0 for trigger/free technologies with no paired recipe),
+     *   2. then the total science-pack amount (the sum of the recipe's `in` values),
+     *   3. then the label (locale compare),
+     *   4. then the id — a final, fully deterministic tiebreak.
+     * A prerequisite that references an unknown technology is ignored for availability (so a
+     * dangling reference cannot strand a technology forever); any technologies still unemitted
+     * after the sort — a prerequisite cycle — are appended in that same ascending-cost order.
+     * The list is therefore always complete and the routine never drops a node or throws.
+     */
+    private orderedTechnologies(): FactorioLabItem[] {
+        const technologies = [...this.technologiesById.values()];
+
+        // Research-cost tuple per technology, taken from its paired research recipe.
+        const costs = new Map<string, [number, number, string, string]>();
+        for (const technology of technologies) {
+            const recipe = this.technologyRecipesById.get(technology.id);
+            const time = recipe ? toNumber(recipe.time) : 0;
+            const amount = recipe
+                ? Object.values(recipe.in || {}).reduce<number>((sum, value) => sum + toNumber(value), 0)
+                : 0;
+            costs.set(technology.id, [time, amount, technology.name, technology.id]);
+        }
+        const compareCost = (a: string, b: string): number => {
+            const [timeA, amountA, labelA, idA] = costs.get(a) as [number, number, string, string];
+            const [timeB, amountB, labelB, idB] = costs.get(b) as [number, number, string, string];
+            if (timeA !== timeB) {
+                return timeA - timeB;
+            }
+            if (amountA !== amountB) {
+                return amountA - amountB;
+            }
+            const byLabel = labelA.localeCompare(labelB);
+            if (byLabel !== 0) {
+                return byLabel;
+            }
+            return idA < idB ? -1 : idA > idB ? 1 : 0;
+        };
+
+        // In-degree = number of prerequisites that resolve to a known technology.
+        const inDegree = new Map<string, number>();
+        for (const technology of technologies) {
+            const known = (technology.technology?.prerequisites || []).filter((id) => this.technologiesById.has(id));
+            inDegree.set(technology.id, known.length);
+        }
+
+        const available = technologies.map((technology) => technology.id).filter((id) => inDegree.get(id) === 0);
+
+        const ordered: FactorioLabItem[] = [];
+        const emitted = new Set<string>();
+        while (available.length > 0) {
+            // Pick the cheapest currently-available technology (linear scan; the node counts
+            // stay small enough — hundreds at most — that this is not worth a heap).
+            let minIndex = 0;
+            for (let i = 1; i < available.length; ++i) {
+                if (compareCost(available[i], available[minIndex]) < 0) {
+                    minIndex = i;
+                }
+            }
+            const [technologyId] = available.splice(minIndex, 1);
+            emitted.add(technologyId);
+            ordered.push(this.technologiesById.get(technologyId) as FactorioLabItem);
+
+            for (const dependentId of this.technologyIdsByPrerequisite.get(technologyId) || []) {
+                const degree = inDegree.get(dependentId);
+                if (degree === undefined || emitted.has(dependentId)) {
+                    continue;
+                }
+                const next = degree - 1;
+                inDegree.set(dependentId, next);
+                if (next === 0) {
+                    available.push(dependentId);
+                }
+            }
+        }
+
+        // Cycle / unresolved remainder: append deterministically, in the same cost order.
+        if (ordered.length < technologies.length) {
+            const remainder = technologies
+                .filter((technology) => !emitted.has(technology.id))
+                .sort((a, b) => compareCost(a.id, b.id));
+            ordered.push(...remainder);
+        }
+
+        return ordered;
     }
 
     public getItemRecipes(

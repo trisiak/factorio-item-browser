@@ -15,12 +15,14 @@ import {
     ItemType,
     ModData,
     RecipeDetailsData,
+    RecipeListData,
     RecipeMachinesData,
     SearchResultsData,
     SettingData,
     SettingOptionsData,
     SidebarEntityData,
     TechnologyData,
+    TechnologyListData,
 } from "../transfer";
 import { PackData, ResolvedIcon } from "./PackData";
 import { FactorioLabData } from "./factoriolab";
@@ -260,6 +262,16 @@ export class StaticPortalApi implements PortalApi {
     public async getItemList(page: number): Promise<ItemListData> {
         const packData = await this.currentPackData();
         return packData.getItemList(page);
+    }
+
+    public async getTechnologyList(page: number): Promise<TechnologyListData> {
+        const packData = await this.currentPackData();
+        return packData.getTechnologyList(page);
+    }
+
+    public async getRecipeList(page: number): Promise<RecipeListData> {
+        const packData = await this.currentPackData();
+        return packData.getRecipeList(page);
     }
 
     public async getRandom(): Promise<EntityData[]> {

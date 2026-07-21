@@ -1,4 +1,4 @@
-import { faCogs, faTh } from "@fortawesome/free-solid-svg-icons";
+import { faCogs, faFlask, faIndustry, faTh } from "@fortawesome/free-solid-svg-icons";
 import classNames from "classnames";
 import { observer } from "mobx-react-lite";
 import React, { FC, useContext } from "react";
@@ -49,6 +49,18 @@ const Sidebar: FC = () => {
                     icon={faTh}
                     label={t("sidebar.all-items")}
                     highlighted={globalStore.currentRoute === RouteName.ItemList}
+                />
+                <SidebarButton
+                    route={RouteName.RecipeList}
+                    icon={faIndustry}
+                    label={t("sidebar.all-recipes")}
+                    highlighted={globalStore.currentRoute === RouteName.RecipeList}
+                />
+                <SidebarButton
+                    route={RouteName.TechnologyList}
+                    icon={faFlask}
+                    label={t("sidebar.all-technologies")}
+                    highlighted={globalStore.currentRoute === RouteName.TechnologyList}
                 />
 
                 <PinnedEntityList />

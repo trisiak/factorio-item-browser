@@ -94,6 +94,15 @@ export type TechnologyMetaData = {
     label: string;
 };
 
+export type TechnologyListData = ResultsData<TechnologyMetaData>;
+
+export type RecipeMetaData = {
+    name: string;
+    label: string;
+};
+
+export type RecipeListData = ResultsData<RecipeMetaData>;
+
 export type TechnologyData = {
     name: string;
     label: string;
