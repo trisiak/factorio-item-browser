@@ -1,7 +1,9 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { useLongPress } from "./hooks";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 type LongPressReturn = ReturnType<typeof useLongPress>;
 
@@ -20,15 +22,16 @@ function renderLongPress(
     };
 
     const container = document.createElement("div");
+    const root = createRoot(container);
     act(() => {
-        ReactDOM.render(<TestComponent />, container);
+        root.render(<TestComponent />);
     });
 
     return {
         result,
         unmount: () => {
             act(() => {
-                ReactDOM.unmountComponentAtNode(container);
+                root.unmount();
             });
         },
     };
