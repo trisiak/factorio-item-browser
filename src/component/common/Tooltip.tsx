@@ -1,13 +1,15 @@
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { observer } from "mobx-react-lite";
-import React, { FC, useContext, useEffect, useLayoutEffect, useRef } from "react";
+import React, { FC, useCallback, useContext, useEffect, useLayoutEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { tooltipStoreContext } from "../../store/TooltipStore";
 import Entity from "../entity/Entity";
 
 import "./Tooltip.scss";
 
 const MARGIN_CHEVRON = 8;
+const MARGIN_VIEWPORT = 8;
 
 type Position = {
     top: number;
@@ -33,11 +35,18 @@ function calculatePosition(target: Element, content: Element, chevron: Element):
 
     const targetCenter = targetRect.left + window.scrollX + targetRect.width / 2;
     let left = targetCenter - chevronRect.width / 2 - MARGIN_CHEVRON;
-    if (left + contentRect.width + chevronRect.width > window.scrollX + window.innerWidth) {
+    if (left + contentRect.width > window.scrollX + window.innerWidth - MARGIN_VIEWPORT) {
         // Tooltip would be offscreen at the right, so shift it to the left.
         left = targetCenter + chevronRect.width / 2 + MARGIN_CHEVRON - contentRect.width;
         isChevronRight = true;
     }
+
+    // Whatever side was chosen, never leave the viewport horizontally: on narrow screens neither
+    // orientation may fit, so clamp into the visible area (preferring the left edge when the
+    // tooltip is wider than the viewport itself).
+    const minLeft = window.scrollX + MARGIN_VIEWPORT;
+    const maxLeft = window.scrollX + window.innerWidth - contentRect.width - MARGIN_VIEWPORT;
+    left = Math.min(Math.max(left, minLeft), Math.max(maxLeft, minLeft));
 
     return {
         top,
@@ -48,9 +57,12 @@ function calculatePosition(target: Element, content: Element, chevron: Element):
 }
 
 /**
- * The component representing the tooltip.
+ * The component representing the tooltip, in both of its presentations: anchored next to its target
+ * element (mouse hover, keyboard focus), or as a bottom drawer with a backdrop (touch long-press).
+ * The drawer keeps its content interactive, so the entity links inside it can actually be followed.
  */
 const Tooltip: FC = () => {
+    const { t } = useTranslation();
     const tooltipStore = useContext(tooltipStoreContext);
 
     const chevronRef = useRef<HTMLDivElement>(null);
@@ -58,9 +70,16 @@ const Tooltip: FC = () => {
     const tooltipRef = useRef<HTMLDivElement>(null);
 
     const doRender = tooltipStore.isTooltipAvailable;
+    const isDrawer = tooltipStore.mode === "drawer";
+
+    const handleClose = useCallback((): void => {
+        tooltipStore.hideTooltip();
+    }, []);
 
     // While a tooltip is shown, tapping/clicking anywhere outside of it (and outside its target icon)
-    // dismisses it. This is the touch equivalent of moving the mouse away, which long-press tooltips lack.
+    // dismisses it, and so does the Escape key. This is the touch/keyboard equivalent of moving the
+    // mouse away, which long-press and focus tooltips lack. The drawer additionally has its backdrop
+    // and close button, but keeping these listeners active for it costs nothing.
     useEffect((): void | (() => void) => {
         if (!doRender) {
             return;
@@ -75,13 +94,22 @@ const Tooltip: FC = () => {
             }
             tooltipStore.hideTooltip();
         };
+        const handleKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === "Escape") {
+                tooltipStore.hideTooltip();
+            }
+        };
 
         document.addEventListener("pointerdown", handlePointerDown);
-        return (): void => document.removeEventListener("pointerdown", handlePointerDown);
+        document.addEventListener("keydown", handleKeyDown);
+        return (): void => {
+            document.removeEventListener("pointerdown", handlePointerDown);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
     }, [doRender]);
 
     useLayoutEffect((): void => {
-        if (!doRender || !tooltipStore.fetchedTarget) {
+        if (!doRender || isDrawer || !tooltipStore.fetchedTarget) {
             return;
         }
 
@@ -105,6 +133,26 @@ const Tooltip: FC = () => {
 
     if (!doRender || !tooltipStore.fetchedData) {
         return null;
+    }
+
+    if (isDrawer) {
+        return (
+            <div className="tooltip-drawer">
+                <div className="backdrop" onPointerDown={handleClose} />
+                <div
+                    className="sheet"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={tooltipStore.fetchedData.label}
+                    ref={tooltipRef}
+                >
+                    <button type="button" className="close" aria-label={t("tooltip.close")} onClick={handleClose}>
+                        <FontAwesomeIcon icon={faTimes} aria-hidden />
+                    </button>
+                    <Entity entity={tooltipStore.fetchedData} ref={contentRef} />
+                </div>
+            </div>
+        );
     }
 
     return (

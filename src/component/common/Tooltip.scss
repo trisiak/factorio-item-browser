@@ -1,15 +1,10 @@
 @import "../../style/import";
 
-.tooltip {
-    pointer-events: none;
-    position: absolute;
-    z-index: $zIndex-tooltip;
-
+// The entity box coloring shared by both tooltip presentations.
+.tooltip,
+.tooltip-drawer {
     .entity {
-        box-shadow: $shadow-box-tooltip;
-        max-width: $tooltip-content-width;
         margin: 0;
-        width: $tooltip-content-width;
 
         .more-recipes {
             background: color($color-tooltip, $lightness-box-background, $alpha-box-content-tooltip);
@@ -32,6 +27,19 @@
             background-color: color($color-recipe-expensive, $lightness-box-background, $alpha-box-content-tooltip);
             color: color($color-recipe-expensive, $lightness-text-primary);
         }
+    }
+}
+
+// The anchored presentation: positioned next to its target, purely informational.
+.tooltip {
+    pointer-events: none;
+    position: absolute;
+    z-index: $zIndex-tooltip;
+
+    .entity {
+        box-shadow: $shadow-box-tooltip;
+        max-width: calc(100vw - #{2 * $spacing-default});
+        width: $tooltip-content-width;
     }
 
     .chevron {
@@ -62,6 +70,109 @@
         }
         &.right {
             right: 0;
+        }
+    }
+}
+
+// The drawer presentation for touch long-presses: a bottom sheet above a dimming backdrop. Unlike
+// the anchored tooltip it stays interactive, so its entity links can be tapped, and it is dismissed
+// through the backdrop, the close button or the Escape key.
+.tooltip-drawer {
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: $zIndex-tooltip;
+
+    .backdrop {
+        animation: tooltip-drawer-fade-in 0.2s ease-out;
+        background: $color-overlay;
+        bottom: 0;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        touch-action: none;
+    }
+
+    .sheet {
+        animation: tooltip-drawer-slide-in 0.2s ease-out;
+        background: color($color-tooltip, $lightness-box-background, $alpha-box-content-tooltip);
+        bottom: 0;
+        box-shadow: $shadow-box-tooltip;
+        left: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+        position: absolute;
+        right: 0;
+    }
+
+    // The entity itself scrolls when the recipe list is taller than the drawer; its head stays
+    // sticky at the top of the scroll area, aligned with the (non-scrolling) close button.
+    .entity {
+        box-shadow: none;
+        max-height: 70vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .entity-head {
+        // Keep the entity label from running under the close button.
+        padding-right: $tooltip-chevron-size + $spacing-default;
+        position: sticky;
+        top: 0;
+        z-index: $zIndex-icon;
+    }
+
+    .close {
+        // Appearance reset so the semantic <button> renders like a plain icon.
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        border: 0;
+        font-family: inherit;
+        line-height: inherit;
+
+        color: color($color-tooltip, $lightness-text-primary);
+        cursor: pointer;
+        font-size: $text-size-headline-small;
+        height: $tooltip-chevron-size;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: $tooltip-chevron-size;
+        z-index: $zIndex-icon;
+
+        &:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: -2px;
+        }
+    }
+}
+
+@keyframes tooltip-drawer-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes tooltip-drawer-slide-in {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tooltip-drawer {
+        .backdrop,
+        .sheet {
+            animation: none;
         }
     }
 }

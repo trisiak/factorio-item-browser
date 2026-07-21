@@ -10,7 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { debounce } from "throttle-debounce";
 import { iconManager } from "../class/IconManager";
-import { tooltipStoreContext } from "../store/TooltipStore";
+import { TooltipMode, tooltipStoreContext } from "../store/TooltipStore";
 
 /**
  * Uses the specified title as the document title. If no title is specified, then the default title will be used.
@@ -47,7 +47,7 @@ export function useScrollEffect(callback: () => void | Promise<void>): void {
 }
 
 type UseTooltipResult = {
-    showTooltip: () => Promise<void>;
+    showTooltip: (mode?: TooltipMode) => Promise<void>;
     hideTooltip: () => void;
 };
 
@@ -59,9 +59,12 @@ export function useTooltip(type: string, name: string, ref: RefObject<Element>):
     const tooltipStore = useContext(tooltipStoreContext);
 
     return {
-        showTooltip: useCallback(async (): Promise<void> => {
-            await tooltipStore.showTooltip(ref, type, name);
-        }, [type, name, ref]),
+        showTooltip: useCallback(
+            async (mode: TooltipMode = "anchored"): Promise<void> => {
+                await tooltipStore.showTooltip(ref, type, name, mode);
+            },
+            [type, name, ref],
+        ),
         hideTooltip: useCallback((): void => {
             tooltipStore.hideTooltip();
         }, []),
@@ -110,6 +113,10 @@ export function useLongPress(
 
     const onPointerDown = useCallback(
         (event: ReactPointerEvent): void => {
+            // A fresh press invalidates any stale suppression left over from a long-press whose
+            // click never landed on this element (e.g. the finger lifted over the drawer backdrop).
+            suppressClickRef.current = false;
+
             // Mouse keeps hover semantics; only touch/pen get a long-press.
             if (event.pointerType !== "touch" && event.pointerType !== "pen") {
                 return;
@@ -183,20 +190,28 @@ type EntityTooltipResult = {
 /**
  * Uses an entity tooltip on the referenced element, wiring up all the ways it can be shown: hovering with a mouse,
  * focusing it with the keyboard, and long-pressing it on a touch/pen device. Touch-emulated mouse events do not
- * trigger the hover path (it is guarded by the pointer type), so touch devices rely on the long-press instead of
- * the disabled-below-breakpoint hack the tooltip used to use.
+ * trigger the hover path (it is guarded by the pointer type). Hover and focus show the classic anchored tooltip;
+ * the long-press opens the bottom-drawer presentation instead, which fits small screens and stays interactive.
  */
 export function useEntityTooltip(type: string, name: string, ref: RefObject<Element>): EntityTooltipResult {
     const { showTooltip, hideTooltip } = useTooltip(type, name, ref);
-    const longPressHandlers = useLongPress(showTooltip);
+
+    const showAnchoredTooltip = useCallback((): void => {
+        showTooltip("anchored");
+    }, [showTooltip]);
+    const showDrawerTooltip = useCallback((): void => {
+        showTooltip("drawer");
+    }, [showTooltip]);
+
+    const longPressHandlers = useLongPress(showDrawerTooltip);
 
     const onPointerEnter = useCallback(
         (event: ReactPointerEvent): void => {
             if (event.pointerType === "mouse") {
-                showTooltip();
+                showAnchoredTooltip();
             }
         },
-        [showTooltip],
+        [showAnchoredTooltip],
     );
 
     const onPointerLeave = useCallback(
@@ -214,7 +229,7 @@ export function useEntityTooltip(type: string, name: string, ref: RefObject<Elem
             ...longPressHandlers,
             onPointerEnter,
             onPointerLeave,
-            onFocus: showTooltip,
+            onFocus: showAnchoredTooltip,
             onBlur: hideTooltip,
         },
     };

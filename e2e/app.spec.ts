@@ -223,31 +223,64 @@ test.describe("mobile viewport (phone)", () => {
     });
 });
 
-test.describe("touch long-press tooltips", () => {
+test.describe("touch long-press tooltip drawer", () => {
     // A touch-capable phone: below the breakpoints, hover tooltips no longer fire from
-    // touch-emulated events, so the long-press interaction is the only way to reveal a
+    // touch-emulated events, so the long-press interaction is the only way to reveal
+    // entity info. It opens the bottom-drawer presentation instead of the anchored
     // tooltip. We drive it with raw touch pointer events (Playwright has no long-press
     // primitive) and rely on the 500ms hold timer plus the async tooltip fetch.
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test("long-pressing an item icon reveals its tooltip, and tapping away dismisses it", async ({ page }) => {
-        await gotoItemList(page);
-
+    async function openDrawer(page: Page): Promise<void> {
         const icon = page.locator("a[href*='/item/']").first();
         await expect(icon).toBeVisible();
 
-        // Start a touch press on the icon; the hold timer fires the tooltip.
+        // Start a touch press on the icon; the hold timer fires the drawer.
         await icon.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 });
-        await expect(page.locator(".tooltip")).toBeVisible({ timeout: 5000 });
+        await expect(page.locator(".tooltip-drawer .sheet")).toBeVisible({ timeout: 5000 });
         await icon.dispatchEvent("pointerup", { pointerType: "touch", clientX: 20, clientY: 20 });
+    }
 
-        // A tap outside the tooltip and its icon dismisses it (document-level listener).
-        await page.locator("footer, .footer, body").first().dispatchEvent("pointerdown", {
+    test("long-pressing an item icon opens the drawer inside the viewport, closable via its button", async ({
+        page,
+    }) => {
+        await gotoItemList(page);
+        await openDrawer(page);
+
+        // The sheet is anchored to the bottom edge and never exceeds the viewport width.
+        const viewport = page.viewportSize();
+        const sheet = await page.locator(".tooltip-drawer .sheet").boundingBox();
+        expect(sheet).not.toBeNull();
+        expect(sheet!.x).toBeGreaterThanOrEqual(0);
+        expect(sheet!.x + sheet!.width).toBeLessThanOrEqual(viewport!.width);
+        expect(sheet!.y + sheet!.height).toBeGreaterThanOrEqual(viewport!.height - 1);
+
+        // The dedicated close button dismisses the drawer.
+        await page.locator(".tooltip-drawer .close").click();
+        await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
+    });
+
+    test("tapping the backdrop dismisses the drawer", async ({ page }) => {
+        await gotoItemList(page);
+        await openDrawer(page);
+
+        await page.locator(".tooltip-drawer .backdrop").dispatchEvent("pointerdown", {
             pointerType: "touch",
             clientX: 5,
             clientY: 5,
         });
-        await expect(page.locator(".tooltip")).toHaveCount(0);
+        await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
+    });
+
+    test("the drawer's entity link navigates to the item page", async ({ page }) => {
+        await gotoItemList(page);
+        await openDrawer(page);
+
+        await page.locator(".tooltip-drawer .entity-head").click();
+        await expect(page).toHaveURL(/\/item\//);
+        await expect(page.locator("h1")).toContainText(/Item:|Fluid:/);
+        // Navigating away also closed the drawer (route-change handler).
+        await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
     });
 });
 
