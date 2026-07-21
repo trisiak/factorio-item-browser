@@ -7,7 +7,7 @@ done quickly and safely; humans should also read `README.md`.
 
 A fork of
 [`factorio-item-browser/portal-frontend`](https://github.com/factorio-item-browser/portal-frontend)
-— the React 17 + TypeScript + MobX frontend of the Factorio Item Browser —
+— the React 18 + TypeScript + MobX frontend of the Factorio Item Browser —
 being converted into a **fully static SPA** that reads fixed, pre-generated
 per-modpack data from remote URLs. No PHP backend, no database, no per-user
 mod-combination system. This fork is an independent line of development; don't
@@ -78,8 +78,8 @@ anything user-visible.
   `/opt/pw-browsers/chromium`); the config routes only `https://` through
   `HTTPS_PROXY` so the local test server stays direct.
 - Playwright specs are excluded from jest (`testPathIgnorePatterns`) and from
-  the app's tsc (`tsconfig.json` includes `src` only) — keep it that way, the
-  app toolchain is TS 4.2.
+  the app's tsc (`tsconfig.json` includes `src` only) — keep it that way.
+  `@playwright/test` ships its own current toolchain independent of the app's.
 
 ## Conventions
 

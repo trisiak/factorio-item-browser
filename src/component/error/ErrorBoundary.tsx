@@ -12,7 +12,7 @@ type Props = {
  */
 class ErrorBoundary extends Component<Props> {
     public static contextType = errorStoreContext;
-    public declare context: ContextType<typeof errorStoreContext>;
+    declare public context: ContextType<typeof errorStoreContext>;
 
     public componentDidCatch(error: Error): void {
         this.context.handleError(new RenderError(error.message));
