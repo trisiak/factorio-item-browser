@@ -43,6 +43,8 @@
         }
     },
     "header": {
+        "open-search": "Open search",
+        "open-sidebar": "Open menu",
         "search": {
             "placeholder": "Item, recipe, ..."
         }
@@ -144,6 +146,7 @@
         "action-pin": "Pin element to the top",
         "action-unpin": "Unpin element from the top",
         "all-items": "All items",
+        "close": "Close menu",
         "headline-last-viewed": "Last viewed",
         "headline-pinned": "Pinned",
         "setting": "Setting: {{name}}"

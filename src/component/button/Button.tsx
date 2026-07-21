@@ -19,7 +19,7 @@ type Props = {
 /**
  * The component representing a simple button to click on like there is no tomorrow.
  */
-const Button: ForwardRefRenderFunction<HTMLDivElement, Props> = (
+const Button: ForwardRefRenderFunction<HTMLButtonElement, Props> = (
     { label, icon, primary, secondary, spacing, onClick },
     ref,
 ) => {
@@ -31,10 +31,10 @@ const Button: ForwardRefRenderFunction<HTMLDivElement, Props> = (
     });
 
     return (
-        <div className={classes} ref={ref} onClick={onClick}>
-            {icon ? <FontAwesomeIcon icon={icon} spin={icon === faSpinner} /> : null}
+        <button type="button" className={classes} ref={ref} onClick={onClick}>
+            {icon ? <FontAwesomeIcon icon={icon} spin={icon === faSpinner} aria-hidden /> : null}
             {label}
-        </div>
+        </button>
     );
 };
 

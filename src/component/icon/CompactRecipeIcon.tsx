@@ -2,8 +2,8 @@ import classNames from "classnames";
 import { observer } from "mobx-react-lite";
 import React, { ForwardRefRenderFunction, RefObject, useContext, useRef } from "react";
 import { iconStoreContext } from "../../store/IconStore";
-import { formatAmount } from "../../util/format";
-import { useIcon, useTooltip } from "../../util/hooks";
+import { formatAmount, humanizeName } from "../../util/format";
+import { useEntityTooltip, useIcon } from "../../util/hooks";
 import EntityLink from "../link/EntityLink";
 
 import "./CompactRecipeIcon.scss";
@@ -27,7 +27,7 @@ const CompactRecipeIcon: ForwardRefRenderFunction<HTMLAnchorElement, Props> = ({
         iconRef = useRef<HTMLAnchorElement>(null);
     }
 
-    const { showTooltip, hideTooltip } = useTooltip(type, name, iconRef);
+    const { tooltipProps } = useEntityTooltip(type, name, iconRef);
     const iconClass = useIcon(type, name);
 
     const classes = classNames({
@@ -41,9 +41,9 @@ const CompactRecipeIcon: ForwardRefRenderFunction<HTMLAnchorElement, Props> = ({
             className={classes}
             type={type}
             name={name}
+            aria-label={humanizeName(name)}
             ref={iconRef}
-            onMouseEnter={showTooltip}
-            onMouseLeave={hideTooltip}
+            {...tooltipProps}
         >
             <span className="amount">{formatAmount(amount)}</span>
         </EntityLink>

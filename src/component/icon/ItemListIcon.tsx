@@ -1,7 +1,8 @@
 import classNames from "classnames";
 import { observer } from "mobx-react-lite";
 import React, { FC, useRef } from "react";
-import { useIcon, useTooltip } from "../../util/hooks";
+import { humanizeName } from "../../util/format";
+import { useEntityTooltip, useIcon } from "../../util/hooks";
 import EntityLink from "../link/EntityLink";
 
 import "./Icon.scss";
@@ -16,7 +17,7 @@ type Props = {
  */
 const ItemListIcon: FC<Props> = ({ type, name }) => {
     const iconRef = useRef<HTMLAnchorElement>(null);
-    const { showTooltip, hideTooltip } = useTooltip(type, name, iconRef);
+    const { tooltipProps } = useEntityTooltip(type, name, iconRef);
     const iconClass = useIcon(type, name);
 
     const classes = classNames({
@@ -30,9 +31,9 @@ const ItemListIcon: FC<Props> = ({ type, name }) => {
             className={classes}
             type={type}
             name={name}
-            onMouseEnter={showTooltip}
-            onMouseLeave={hideTooltip}
+            aria-label={humanizeName(name)}
             ref={iconRef}
+            {...tooltipProps}
         />
     );
 };

@@ -1,6 +1,14 @@
 @import "../../../style/import";
 
 .sidebar-close-icon {
+    // Appearance reset so the semantic <button> matches the <div> it replaced.
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 0;
+    font-family: inherit;
+    line-height: inherit;
+
     color: $color-section-headline;
     cursor: pointer;
     font-size: $text-size-headline-small;
@@ -10,4 +18,9 @@
     text-shadow: $shadow-text;
     top: 0;
     z-index: $zIndex-icon;
+
+    &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: -2px;
+    }
 }

@@ -2,9 +2,7 @@ import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { observer } from "mobx-react-lite";
 import React, { FC, useContext, useEffect, useLayoutEffect, useRef } from "react";
-import { useMediaQuery } from "react-responsive";
 import { tooltipStoreContext } from "../../store/TooltipStore";
-import { Breakpoint } from "../../util/const";
 import Entity from "../entity/Entity";
 
 import "./Tooltip.scss";
@@ -54,7 +52,6 @@ function calculatePosition(target: Element, content: Element, chevron: Element):
  */
 const Tooltip: FC = () => {
     const tooltipStore = useContext(tooltipStoreContext);
-    const isMedium = useMediaQuery({ minWidth: Breakpoint.Medium });
 
     const chevronRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -62,9 +59,26 @@ const Tooltip: FC = () => {
 
     const doRender = tooltipStore.isTooltipAvailable;
 
-    useEffect(() => {
-        tooltipStore.setDisableFlag("breakpoint", !isMedium);
-    }, [isMedium]);
+    // While a tooltip is shown, tapping/clicking anywhere outside of it (and outside its target icon)
+    // dismisses it. This is the touch equivalent of moving the mouse away, which long-press tooltips lack.
+    useEffect((): void | (() => void) => {
+        if (!doRender) {
+            return;
+        }
+
+        const handlePointerDown = (event: PointerEvent): void => {
+            const node = event.target as Node | null;
+            const tooltip = tooltipRef.current;
+            const target = tooltipStore.fetchedTarget?.current ?? null;
+            if (node && ((tooltip && tooltip.contains(node)) || (target && target.contains(node)))) {
+                return;
+            }
+            tooltipStore.hideTooltip();
+        };
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        return (): void => document.removeEventListener("pointerdown", handlePointerDown);
+    }, [doRender]);
 
     useLayoutEffect((): void => {
         if (!doRender || !tooltipStore.fetchedTarget) {

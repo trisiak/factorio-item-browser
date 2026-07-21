@@ -3,6 +3,15 @@
 .header-icon {
     @include transition-default(color);
 
+    // Appearance reset so the semantic <button> matches the <div> it replaced.
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 0;
+    display: block;
+    font-family: inherit;
+    line-height: inherit;
+
     color: rgba($color-header-text, $alpha-input-default);
     cursor: pointer;
     padding: $spacing-default;
@@ -13,5 +22,10 @@
 
     &:hover, &:active, &:focus {
         color: rgba($color-header-text, $alpha-input-focused);
+    }
+
+    &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: -2px;
     }
 }

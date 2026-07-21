@@ -3,6 +3,14 @@
 .button {
     @include transition-default(background-color);
 
+    // Appearance reset so a semantic <button> looks identical to the <div> this used to be.
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    font-family: inherit;
+    line-height: inherit;
+    width: 100%;
+
     background: color($color-button-default, $lightness-box-background, $alpha-box-content);
     box-shadow: $shadow-box;
     color: color($color-button-default, $lightness-button-text);
@@ -15,6 +23,11 @@
 
     &:hover {
         background: color($color-button-default, $lightness-button-background-hover);
+    }
+
+    &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
     }
 
     svg {

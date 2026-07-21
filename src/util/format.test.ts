@@ -1,7 +1,26 @@
 import i18next, { TFunction } from "i18next";
-import { formatAmount, formatCraftingSpeed, formatCraftingTime, formatEnergyUsage, formatMachineSlots } from "./format";
+import {
+    formatAmount,
+    formatCraftingSpeed,
+    formatCraftingTime,
+    formatEnergyUsage,
+    formatMachineSlots,
+    humanizeName,
+} from "./format";
 
 describe("format", (): void => {
+    describe("humanizeName", (): void => {
+        test.each([
+            ["iron-plate", "Iron plate"],
+            ["heavy_oil", "Heavy oil"],
+            ["copper-cable", "Copper cable"],
+            ["se-rocket-launch-pad", "Se rocket launch pad"],
+            ["", ""],
+        ])("%s -> %s", (name: string, expectedResult: string): void => {
+            expect(humanizeName(name)).toBe(expectedResult);
+        });
+    });
+
     describe("formatAmount", (): void => {
         test.each([
             [42, "42x"],
