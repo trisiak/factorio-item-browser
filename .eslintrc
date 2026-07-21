@@ -27,6 +27,9 @@
     },
     "rules": {
         "@typescript-eslint/explicit-member-accessibility":  "error",
+        "@typescript-eslint/no-unused-vars": ["warn", {
+            "argsIgnorePattern": "^_"
+        }],
         "import/order": ["error", {
             "newlines-between": "never",
             "alphabetize": {

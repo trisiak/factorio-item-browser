@@ -258,6 +258,29 @@ should mirror this checklist and the two must stay reconciled.
   - New unit tests cover the unknown-id sidebar preservation, `PaginatedList`'s error
     path and re-entrancy, and the previously untested `Router.buildPath` (base-path
     prefix) and `StorageManager` combination scoping.
+- [x] **Data-layer efficiency + fetch robustness.** The static data layer now
+  builds only what a request returns. `PackData.search` and `getItemRecipes`
+  slice to the requested page *before* materializing entities (each of which
+  expands up to `numberOfRecipesPerEntity` recipes), instead of building every
+  match and dropping all but one page — search still computes its duplicate-label
+  counts over *all* matches first (cheap), so cross-page disambiguation is
+  byte-identical. `getItemList` memoizes its listable-meta array once instead of
+  rebuilding it per call. The two "unlocked by" lookups (`getItemResearch`,
+  `getRecipeResearch`) now use a lighter `buildTechnologyResearch` that leaves
+  `unlockedRecipes: []` and computes `numberOfUnlockedRecipes` as the count of
+  resolvable `recipeUnlock` ids (equal to the full build's count); their
+  consumers — `ItemStore`/`RecipeStore` → `TechnologyEntityList` and the recipe/
+  item pages — render only name/label/research cost and never read the unlocked
+  recipes, so nothing regresses. `getTechnology` and the technology tooltip keep
+  the full `buildTechnologyData`. The `TechnologyData` shape is unchanged.
+  `StaticPortalApi.fetchPackData` now validates that `items` and `recipes` are
+  arrays (throwing a pack-named `ServiceNotAvailableError` on upstream format
+  drift instead of failing deep inside `PackData`) and wraps the download in a
+  30 s `AbortController` timeout, also surfaced as `ServiceNotAvailableError`.
+  The lone eslint unused-arg warning (`sendSidebarEntities`) is silenced via an
+  `argsIgnorePattern: "^_"` rule and an `_`-prefixed parameter. New unit tests
+  cover cross-page search pagination + disambiguation, the lightweight research
+  count matching the full build, and the malformed-data validation error.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 

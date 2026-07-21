@@ -56,6 +56,8 @@ export class PackData {
     private readonly recipeIdsByProducer = new Map<string, string[]>();
     private readonly iconsById = new Map<string, FactorioLabIcon>();
     private readonly listableItems: FactorioLabItem[];
+    // The item-list meta array is the same on every call; build it once, lazily.
+    private listableItemMetasCache?: ItemMetaData[];
 
     // Technology data, indexed but never added to the browsable lists above. A technology is
     // an item (category "technology", carrying the technology sub-object) paired with a
@@ -213,12 +215,18 @@ export class PackData {
         return item;
     }
 
+    private listableItemMetas(): ItemMetaData[] {
+        if (!this.listableItemMetasCache) {
+            this.listableItemMetasCache = this.listableItems.map((item) => ({
+                type: this.typeOfItem(item),
+                name: item.id,
+            }));
+        }
+        return this.listableItemMetasCache;
+    }
+
     public getItemList(page: number): ItemListData {
-        const metas: ItemMetaData[] = this.listableItems.map((item) => ({
-            type: this.typeOfItem(item),
-            name: item.id,
-        }));
-        return this.paginate(metas, page, Config.numberOfItemsPerPage);
+        return this.paginate(this.listableItemMetas(), page, Config.numberOfItemsPerPage);
     }
 
     public getItemRecipes(
@@ -232,16 +240,21 @@ export class PackData {
                 : side === "product"
                 ? this.recipeIdsByProduct
                 : this.recipeIdsByProducer;
-        const entities = (map.get(item.id) || []).map((recipeId) => {
-            return this.buildRecipeEntity(this.recipesById.get(recipeId) as FactorioLabRecipe);
-        });
+        // Slice the id list to the requested page first, then build entities only for that
+        // page — the full match set can be large, and each entity expands several recipes.
+        const recipeIds = map.get(item.id) || [];
+        const pageSize = Config.numberOfItemRecipesPerPage;
+        const entities = recipeIds
+            .slice((page - 1) * pageSize, page * pageSize)
+            .map((recipeId) => this.buildRecipeEntity(this.recipesById.get(recipeId) as FactorioLabRecipe));
 
         return {
             type: this.typeOfItem(item),
             name: item.id,
             label: item.name,
             description: "",
-            ...this.paginate(entities, page, Config.numberOfItemRecipesPerPage),
+            results: entities,
+            numberOfResults: recipeIds.length,
         };
     }
 
@@ -336,6 +349,36 @@ export class PackData {
         };
     }
 
+    /**
+     * A lighter counterpart of buildTechnologyData for the "unlocked by" lookups
+     * (getItemResearch / getRecipeResearch), whose consumers render only a technology's
+     * name/label plus its research cost — never the recipes it unlocks. It leaves
+     * `unlockedRecipes` empty and reports `numberOfUnlockedRecipes` as the cheap count of
+     * resolvable recipeUnlock entries, which equals what buildTechnologyData would report
+     * (that method drops unresolvable ids the same way). The TechnologyData shape is
+     * identical; only the expensive recipe-entity materialization is skipped.
+     */
+    private buildTechnologyResearch(technology: FactorioLabItem): TechnologyData {
+        const info = technology.technology || {};
+        const recipe = this.technologyRecipesById.get(technology.id);
+        const numberOfUnlockedRecipes = (info.recipeUnlock || []).filter((recipeId) =>
+            this.recipesById.has(recipeId),
+        ).length;
+
+        return {
+            name: technology.id,
+            label: technology.name,
+            researchTime: recipe ? toNumber(recipe.time) : 0,
+            ingredients: recipe ? this.buildRecipeItems(recipe.in) : [],
+            prerequisites: (info.prerequisites || []).map((id) => this.technologyRef(id)),
+            unlockedRecipes: [],
+            numberOfUnlockedRecipes: numberOfUnlockedRecipes,
+            unlockedTechnologies: (this.technologyIdsByPrerequisite.get(technology.id) || []).map((id) =>
+                this.technologyRef(id),
+            ),
+        };
+    }
+
     public getTechnology(name: string): TechnologyData | null {
         const technology = this.technologiesById.get(name);
         return technology ? this.buildTechnologyData(technology) : null;
@@ -350,7 +393,7 @@ export class PackData {
         return (this.technologyIdsByUnlockedRecipe.get(recipeName) || [])
             .map((id) => this.technologiesById.get(id))
             .filter((technology): technology is FactorioLabItem => technology !== undefined)
-            .map((technology) => this.buildTechnologyData(technology));
+            .map((technology) => this.buildTechnologyResearch(technology));
     }
 
     /**
@@ -370,7 +413,7 @@ export class PackData {
         const technologies = [...technologyIds]
             .map((id) => this.technologiesById.get(id))
             .filter((technology): technology is FactorioLabItem => technology !== undefined)
-            .map((technology) => this.buildTechnologyData(technology));
+            .map((technology) => this.buildTechnologyResearch(technology));
 
         return {
             type: this.typeOfItem(item),
@@ -434,13 +477,17 @@ export class PackData {
         }
 
         // Distinct entities can share a display name (e.g. SE's grounded/spaced variants);
-        // disambiguate those results with the raw id so they are tellable apart.
+        // disambiguate those results with the raw id so they are tellable apart. The counts
+        // must consider ALL matches (cheap), even though only one page of entities is built.
         const labelCounts = new Map<string, number>();
         for (const { item } of scored) {
             labelCounts.set(item.name, (labelCounts.get(item.name) || 0) + 1);
         }
 
-        const entities = scored.map(({ item }) => {
+        // Slice to the requested page before building entities — each entity expands several
+        // recipes, so building them for every match only to drop all but one page is wasteful.
+        const pageSize = Config.numberOfSearchResultsPerPage;
+        const entities = scored.slice((page - 1) * pageSize, page * pageSize).map(({ item }) => {
             const entity = this.buildItemEntity(item);
             if ((labelCounts.get(item.name) || 0) > 1) {
                 entity.label = `${item.name} (${item.id})`;
@@ -449,7 +496,8 @@ export class PackData {
         });
         return {
             query: query,
-            ...this.paginate(entities, page, Config.numberOfSearchResultsPerPage),
+            results: entities,
+            numberOfResults: scored.length,
         };
     }
 
