@@ -19,7 +19,7 @@ type Props = {
 /**
  * The component representing a button with an action, which also have a loading animation.
  */
-const ActionButton: ForwardRefRenderFunction<HTMLDivElement, Props> = (props, ref) => {
+const ActionButton: ForwardRefRenderFunction<HTMLButtonElement, Props> = (props, ref) => {
     if (!props.isVisible) {
         return null;
     }

@@ -1,6 +1,18 @@
 import i18next from "i18next";
 
 /**
+ * Humanizes an internal entity name into a readable fallback label, e.g. "iron-plate" -> "Iron plate".
+ * Used as an accessible name for icon-only entity links where no translated label is available.
+ */
+export function humanizeName(name: string): string {
+    const text = name.replace(/[-_]+/g, " ").trim();
+    if (text === "") {
+        return name;
+    }
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
  * Formats the specified amount to a nice human-readable string.
  */
 export function formatAmount(amount: number): string {

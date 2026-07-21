@@ -282,6 +282,37 @@ should mirror this checklist and the two must stay reconciled.
   cover cross-page search pagination + disambiguation, the lightweight research
   count matching the full build, and the malformed-data validation error.
 
+- [x] **Mobile long-press tooltips + a11y pass.** Entity icons (item grid, compact
+  recipe icons, machine cards, recipe items, sidebar entities) previously showed their
+  tooltip only on mouse hover, and tooltips were hard-disabled below the 800 px
+  breakpoint — leaving touch users with no way to learn what an icon is (a long-press
+  just opened the browser's link context menu). Two reusable hooks in `src/util/hooks.ts`
+  replace that: `useLongPress` runs a ~500 ms hold-to-fire state machine for
+  touch/pen pointers only (cancelled by pointer up/cancel/leave or movement beyond
+  ~10 px), suppresses the context menu on the icon so the press feels native, and
+  suppresses exactly the one click that follows a fired press so the icon does not also
+  navigate (a plain short tap still navigates). `useEntityTooltip` composes it with the
+  existing hover path — now guarded to `pointerType === "mouse"` so touch-emulated mouse
+  events never trigger it — and adds keyboard focus/blur triggers. The blanket
+  sub-breakpoint disable in `Tooltip.tsx` is gone; hover is guarded by pointer type
+  instead, so long-press works at every viewport size and the edge-flipping positioning
+  logic is unchanged. A document-level `pointerdown` listener (added only while a tooltip
+  is shown) dismisses it when tapping outside the tooltip and its icon; route changes
+  already hide it. Accessibility, scoped to the same components: `Button` (and its users
+  `ActionButton`/`PaginatedListButton`) and the header/sidebar icon controls
+  (`SidebarIcon`, `SearchIcon`, `SidebarCloseIcon`) became real `<button type="button">`
+  elements with an SCSS appearance reset (pixel-identical) and a `:focus-visible`
+  outline, so keyboard activation and focus are free; the sidebar pin/unpin actions stay
+  `<div role="button">` because they are nested inside the entity `<a>` where a button
+  would be invalid HTML. Icon-only entity links get an `aria-label` from a humanized
+  fallback of the name (`humanizeName`: `iron-plate` → "Iron plate"), and decorative
+  FontAwesome icons sitting next to visible text get `aria-hidden`. New locale keys
+  `header.open-search`/`header.open-sidebar`/`sidebar.close` (en/de). Out of scope (not
+  done): touch-target sizing and reduced-motion. Tests: `useLongPress` timer/cancel/
+  click-suppression and `humanizeName` covered by jest; a Playwright `hasTouch`
+  long-press test (dispatched touch pointer events on a 390×844 viewport) asserts the
+  tooltip appears and an outside tap dismisses it.
+
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
 | PortalApi method | Static behavior against FactorioLab `data.json` |

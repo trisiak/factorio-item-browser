@@ -21,7 +21,7 @@ const PaginatedListButton = <TEntity, TData extends ResultsData<TEntity>>({
     loadOnScroll,
 }: Props<TEntity, TData>) => {
     const { t } = useTranslation();
-    const ref = useRef<HTMLDivElement>(null);
+    const ref = useRef<HTMLButtonElement>(null);
 
     if (loadOnScroll) {
         useScrollEffect(async (): Promise<void> => {

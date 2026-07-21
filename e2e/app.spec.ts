@@ -223,6 +223,34 @@ test.describe("mobile viewport (phone)", () => {
     });
 });
 
+test.describe("touch long-press tooltips", () => {
+    // A touch-capable phone: below the breakpoints, hover tooltips no longer fire from
+    // touch-emulated events, so the long-press interaction is the only way to reveal a
+    // tooltip. We drive it with raw touch pointer events (Playwright has no long-press
+    // primitive) and rely on the 500ms hold timer plus the async tooltip fetch.
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test("long-pressing an item icon reveals its tooltip, and tapping away dismisses it", async ({ page }) => {
+        await gotoItemList(page);
+
+        const icon = page.locator("a[href*='/item/']").first();
+        await expect(icon).toBeVisible();
+
+        // Start a touch press on the icon; the hold timer fires the tooltip.
+        await icon.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 });
+        await expect(page.locator(".tooltip")).toBeVisible({ timeout: 5000 });
+        await icon.dispatchEvent("pointerup", { pointerType: "touch", clientX: 20, clientY: 20 });
+
+        // A tap outside the tooltip and its icon dismisses it (document-level listener).
+        await page.locator("footer, .footer, body").first().dispatchEvent("pointerdown", {
+            pointerType: "touch",
+            clientX: 5,
+            clientY: 5,
+        });
+        await expect(page.locator(".tooltip")).toHaveCount(0);
+    });
+});
+
 test.describe("technology", () => {
     test("item links to its unlocking technology, whose page is traversable", async ({ page }) => {
         await gotoItemList(page);

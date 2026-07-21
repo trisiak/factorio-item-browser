@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { SidebarEntityData } from "../../../api/transfer";
 import { iconStoreContext } from "../../../store/IconStore";
 import { sidebarStoreContext } from "../../../store/SidebarStore";
-import { tooltipStoreContext } from "../../../store/TooltipStore";
+import { useEntityTooltip } from "../../../util/hooks";
 import Icon from "../../icon/Icon";
 import EntityLink from "../../link/EntityLink";
 
@@ -17,10 +17,14 @@ function renderPinAction(entity: SidebarEntityData): ReactNode {
     const { t } = useTranslation();
     const sidebarStore = useContext(sidebarStoreContext);
 
+    // Kept as a div (not a <button>): it is nested inside the entity's <a>, where interactive
+    // elements would be invalid HTML. The anchor itself carries the semantics.
     return (
         <div
             className="action"
+            role="button"
             title={t("sidebar.action-pin")}
+            aria-label={t("sidebar.action-pin")}
             onClick={(event) => {
                 sidebarStore.pinEntity(entity);
                 event.preventDefault();
@@ -28,7 +32,7 @@ function renderPinAction(entity: SidebarEntityData): ReactNode {
                 return false;
             }}
         >
-            <FontAwesomeIcon icon={faThumbtack} />
+            <FontAwesomeIcon icon={faThumbtack} aria-hidden />
         </div>
     );
 }
@@ -37,10 +41,14 @@ function renderUnpinAction(entity: SidebarEntityData): ReactNode {
     const { t } = useTranslation();
     const sidebarStore = useContext(sidebarStoreContext);
 
+    // Kept as a div (not a <button>): it is nested inside the entity's <a>, where interactive
+    // elements would be invalid HTML. The anchor itself carries the semantics.
     return (
         <div
             className="action"
+            role="button"
             title={t("sidebar.action-unpin")}
+            aria-label={t("sidebar.action-unpin")}
             onClick={(event) => {
                 sidebarStore.unpinEntity(entity);
                 event.preventDefault();
@@ -48,7 +56,7 @@ function renderUnpinAction(entity: SidebarEntityData): ReactNode {
                 return false;
             }}
         >
-            <FontAwesomeIcon icon={faTrash} />
+            <FontAwesomeIcon icon={faTrash} aria-hidden />
         </div>
     );
 }
@@ -64,9 +72,9 @@ const SidebarEntity: FC<Props> = ({ entity }) => {
     const { t } = useTranslation();
     const iconStore = useContext(iconStoreContext);
     const sidebarStore = useContext(sidebarStoreContext);
-    const tooltipStore = useContext(tooltipStoreContext);
 
     const iconRef = useRef<HTMLDivElement>(null);
+    const { tooltipProps } = useEntityTooltip(entity.type, entity.name, iconRef);
     const entityId = sidebarStore.buildIdForEntity(entity);
     const highlightedEntity = iconStore.highlightedEntity;
     const classes = classNames({
@@ -81,12 +89,7 @@ const SidebarEntity: FC<Props> = ({ entity }) => {
             className={classes}
             draggable={true}
             data-id={entityId}
-            onMouseEnter={async () => {
-                await tooltipStore.showTooltip(iconRef, entity.type, entity.name);
-            }}
-            onMouseLeave={() => {
-                tooltipStore.hideTooltip();
-            }}
+            {...tooltipProps}
         >
             <Icon type={entity.type} name={entity.name} ref={iconRef} />
             <span className="label">{entity.label || entity.name}</span>

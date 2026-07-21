@@ -3,7 +3,7 @@ import React, { FC, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { MachineData } from "../../api/transfer";
 import { formatCraftingSpeed, formatEnergyUsage, formatMachineSlots } from "../../util/format";
-import { useTooltip } from "../../util/hooks";
+import { useEntityTooltip } from "../../util/hooks";
 import Icon from "../icon/Icon";
 import EntityLink from "../link/EntityLink";
 
@@ -20,17 +20,11 @@ const MachineEntity: FC<Props> = ({ machine }) => {
     const { t } = useTranslation();
     const iconRef = useRef<HTMLDivElement>(null);
 
-    const { showTooltip, hideTooltip } = useTooltip("item", machine.name, iconRef);
+    const { tooltipProps } = useEntityTooltip("item", machine.name, iconRef);
 
     return (
         <div className="entity machine-entity">
-            <EntityLink
-                type="item"
-                name={machine.name}
-                className="entity-head"
-                onMouseEnter={showTooltip}
-                onMouseLeave={hideTooltip}
-            >
+            <EntityLink type="item" name={machine.name} className="entity-head" {...tooltipProps}>
                 <Icon type="machine" name={machine.name} ref={iconRef} />
                 <h3>{machine.label || machine.name}</h3>
             </EntityLink>

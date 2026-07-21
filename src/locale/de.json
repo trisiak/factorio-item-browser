@@ -43,6 +43,8 @@
         }
     },
     "header": {
+        "open-search": "Suche öffnen",
+        "open-sidebar": "Menü öffnen",
         "search": {
             "placeholder": "Item, Rezept, ..."
         }
@@ -144,6 +146,7 @@
         "action-pin": "Element oben anheften",
         "action-unpin": "Element von oben lösen",
         "all-items": "Alle Items",
+        "close": "Menü schließen",
         "headline-last-viewed": "Zuletzt angesehen",
         "headline-pinned": "Angeheftet",
         "setting": "Einstellung: {{name}}"
