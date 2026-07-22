@@ -236,6 +236,49 @@ export function useEntityTooltip(type: string, name: string, ref: RefObject<Elem
 }
 
 /**
+ * Sizes and positions the referenced element to the visual viewport while {@link active} is true,
+ * updating as that viewport changes (mobile browser chrome showing/hiding, on-screen keyboard,
+ * pinch-zoom). A bottom-anchored element inside it — the tooltip drawer sheet — then tracks the
+ * visible bottom edge instead of the layout-viewport bottom, so browser chrome such as Firefox's
+ * bottom URL bar can no longer occlude it. Falls back to the element's CSS layout when the
+ * VisualViewport API is unavailable.
+ */
+export function useVisualViewportBounds(ref: RefObject<HTMLElement>, active: boolean): void {
+    useEffect((): void | (() => void) => {
+        const viewport = window.visualViewport;
+        if (!active || !viewport) {
+            return;
+        }
+
+        const apply = (): void => {
+            const element = ref.current;
+            if (!element) {
+                return;
+            }
+            element.style.top = `${viewport.offsetTop}px`;
+            element.style.left = `${viewport.offsetLeft}px`;
+            element.style.width = `${viewport.width}px`;
+            element.style.height = `${viewport.height}px`;
+        };
+
+        apply();
+        viewport.addEventListener("resize", apply);
+        viewport.addEventListener("scroll", apply);
+        return (): void => {
+            viewport.removeEventListener("resize", apply);
+            viewport.removeEventListener("scroll", apply);
+            const element = ref.current;
+            if (element) {
+                element.style.top = "";
+                element.style.left = "";
+                element.style.width = "";
+                element.style.height = "";
+            }
+        };
+    }, [ref, active]);
+}
+
+/**
  * Uses a callback to select the text of the specified element.
  */
 export function useSelectClick(ref: RefObject<Node>): () => void {

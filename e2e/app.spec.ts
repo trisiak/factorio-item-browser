@@ -272,6 +272,61 @@ test.describe("touch long-press tooltip drawer", () => {
         await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
     });
 
+    test("dismissing via the backdrop does not navigate to the link beneath it", async ({ page }) => {
+        await gotoItemList(page);
+        await openDrawer(page);
+        const urlBefore = page.url();
+
+        // Tapping the backdrop closes the drawer on pointerdown. Firefox/Safari then synthesize
+        // a click at the tap point which — the drawer now gone — lands on the item link beneath.
+        // That ghost click (on a different icon than the long-pressed one, so it is not covered
+        // by the long-press click-suppression) must be swallowed, not followed.
+        await page.locator(".tooltip-drawer .backdrop").dispatchEvent("pointerdown", {
+            pointerType: "touch",
+            clientX: 20,
+            clientY: 120,
+        });
+        await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
+
+        await page.locator("a[href*='/item/']").nth(6).dispatchEvent("click");
+
+        // Navigation via router5 is synchronous in the link handler, so the URL would already
+        // have changed here had the ghost click been followed.
+        expect(page.url()).toBe(urlBefore);
+    });
+
+    test("the drawer tracks the visual viewport so browser chrome cannot occlude it", async ({ page }) => {
+        // Simulate a browser with 64px of bottom chrome (e.g. Firefox's bottom URL bar): the
+        // visual viewport is then shorter than the 844px layout viewport. The drawer must size
+        // to the visual viewport so its bottom-anchored sheet stays above that chrome instead
+        // of being drawn behind it.
+        const CHROME = 64;
+        await page.addInitScript((chrome) => {
+            const vv = {
+                offsetTop: 0,
+                offsetLeft: 0,
+                pageTop: 0,
+                pageLeft: 0,
+                scale: 1,
+                width: 390,
+                height: 844 - chrome,
+                addEventListener: (): void => {},
+                removeEventListener: (): void => {},
+                dispatchEvent: (): boolean => false,
+            };
+            Object.defineProperty(window, "visualViewport", { configurable: true, get: () => vv });
+        }, CHROME);
+
+        await gotoItemList(page);
+        await openDrawer(page);
+
+        const sheet = await page.locator(".tooltip-drawer .sheet").boundingBox();
+        expect(sheet).not.toBeNull();
+        // The sheet's bottom edge is clear of the simulated bottom chrome (it would sit at the
+        // full 844px layout-viewport bottom if the drawer ignored the visual viewport).
+        expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(844 - CHROME + 1);
+    });
+
     test("the drawer's entity link navigates to the item page", async ({ page }) => {
         await gotoItemList(page);
         await openDrawer(page);

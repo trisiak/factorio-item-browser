@@ -372,6 +372,31 @@ should mirror this checklist and the two must stay reconciled.
   inside the viewport, closes via button/backdrop, and navigates from its entity
   link.
 
+- [x] **Mobile tooltip drawer touch fixes.** Two touch-only bugs in the
+  long-press drawer. (1) *Backdrop dismissal navigated the page.* Both dismiss
+  paths (the backdrop's own `onPointerDown` and the document-level outside-tap
+  listener) fired on `pointerdown`, unmounting the drawer before the browser
+  synthesized the tap's `click`; on Firefox/Safari that click was then
+  re-targeted to whatever entity link now sat under the finger, causing an
+  unwanted navigation on a "tap away" (Chromium caches the target at
+  `pointerdown`, so it never reproduced there). `Tooltip.tsx` now swallows that
+  one ghost `click` at the document capture phase after any touch/pen dismissal
+  (a fresh gesture's `pointerdown` or a 700 ms timeout drops the guard, so a
+  deliberate tap is never eaten), and the redundant backdrop handler is gone —
+  the outside-tap listener is the single dismiss path. (2) *Sheet occluded by
+  browser chrome.* The drawer was anchored to `bottom: 0` on a layout-viewport
+  `position: fixed` box, so dynamic bottom chrome (Firefox's bottom URL bar)
+  drew over the sheet. A new `useVisualViewportBounds` hook (`hooks.ts`) sizes
+  and positions the `.tooltip-drawer` to `window.visualViewport` while the
+  drawer is shown (updating on its `resize`/`scroll`), with a `100dvh` CSS
+  fallback; the bottom-anchored sheet then tracks the visible bottom edge.
+  Tests: jest covers the new hook (apply/update/inactive/cleanup); the e2e
+  long-press spec adds a ghost-click regression (dismiss the backdrop, then a
+  synthesized click on a different item icon must not navigate) and a
+  visual-viewport regression (with a faked shorter visual viewport, the sheet's
+  bottom stays clear of the simulated chrome). Both e2e cases fail on the
+  pre-fix build.
+
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
 | PortalApi method | Static behavior against FactorioLab `data.json` |

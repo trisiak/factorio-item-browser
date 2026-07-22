@@ -78,11 +78,15 @@
 // the anchored tooltip it stays interactive, so its entity links can be tapped, and it is dismissed
 // through the backdrop, the close button or the Escape key.
 .tooltip-drawer {
-    bottom: 0;
     left: 0;
     position: fixed;
-    right: 0;
     top: 0;
+    // Anchor to the visual viewport so mobile browser chrome (e.g. Firefox's bottom URL bar)
+    // cannot occlude the bottom-anchored sheet. useVisualViewportBounds overrides these inline
+    // with the exact visual-viewport rect where the API is available; 100dvh is the CSS fallback.
+    height: 100%;
+    height: 100dvh;
+    width: 100%;
     z-index: $zIndex-tooltip;
 
     .backdrop {

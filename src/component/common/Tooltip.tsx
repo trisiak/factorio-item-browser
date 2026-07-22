@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import React, { FC, useCallback, useContext, useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { tooltipStoreContext } from "../../store/TooltipStore";
+import { useVisualViewportBounds } from "../../util/hooks";
 import Entity from "../entity/Entity";
 
 import "./Tooltip.scss";
@@ -68,6 +69,7 @@ const Tooltip: FC = () => {
     const chevronRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const drawerRef = useRef<HTMLDivElement>(null);
 
     const doRender = tooltipStore.isTooltipAvailable;
     const isDrawer = tooltipStore.mode === "drawer";
@@ -76,10 +78,36 @@ const Tooltip: FC = () => {
         tooltipStore.hideTooltip();
     }, []);
 
+    // Dismissing the drawer on a touch pointerdown removes it before the browser synthesizes
+    // the tap's click. On Firefox/Safari that click is then re-targeted to whatever link now
+    // sits under the finger — the item beneath the backdrop — causing an unwanted navigation.
+    // Swallow that one ghost click at the document capture phase; a fresh gesture (its own
+    // pointerdown) or a short timeout drops the guard so a deliberate tap is never eaten.
+    const suppressGhostClick = useCallback((): void => {
+        const controller = new AbortController();
+        const stop = (): void => controller.abort();
+
+        document.addEventListener(
+            "click",
+            (event: MouseEvent): void => {
+                event.preventDefault();
+                event.stopPropagation();
+                stop();
+            },
+            { capture: true, signal: controller.signal },
+        );
+        document.addEventListener("pointerdown", stop, { capture: true, signal: controller.signal });
+        window.setTimeout(stop, 700);
+    }, []);
+
+    // The drawer is anchored to the bottom of the visual viewport (not the layout viewport),
+    // so mobile browser chrome such as Firefox's bottom URL bar can no longer occlude it.
+    useVisualViewportBounds(drawerRef, doRender && isDrawer);
+
     // While a tooltip is shown, tapping/clicking anywhere outside of it (and outside its target icon)
     // dismisses it, and so does the Escape key. This is the touch/keyboard equivalent of moving the
-    // mouse away, which long-press and focus tooltips lack. The drawer additionally has its backdrop
-    // and close button, but keeping these listeners active for it costs nothing.
+    // mouse away, which long-press and focus tooltips lack. This same outside-tap listener dismisses
+    // the drawer when its (now purely visual) backdrop is tapped; the drawer also has a close button.
     useEffect((): void | (() => void) => {
         if (!doRender) {
             return;
@@ -91,6 +119,9 @@ const Tooltip: FC = () => {
             const target = tooltipStore.fetchedTarget?.current ?? null;
             if (node && ((tooltip && tooltip.contains(node)) || (target && target.contains(node)))) {
                 return;
+            }
+            if (event.pointerType === "touch" || event.pointerType === "pen") {
+                suppressGhostClick();
             }
             tooltipStore.hideTooltip();
         };
@@ -106,7 +137,7 @@ const Tooltip: FC = () => {
             document.removeEventListener("pointerdown", handlePointerDown);
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [doRender]);
+    }, [doRender, suppressGhostClick]);
 
     useLayoutEffect((): void => {
         if (!doRender || isDrawer || !tooltipStore.fetchedTarget) {
@@ -137,8 +168,8 @@ const Tooltip: FC = () => {
 
     if (isDrawer) {
         return (
-            <div className="tooltip-drawer">
-                <div className="backdrop" onPointerDown={handleClose} />
+            <div className="tooltip-drawer" ref={drawerRef}>
+                <div className="backdrop" />
                 <div
                     className="sheet"
                     role="dialog"
