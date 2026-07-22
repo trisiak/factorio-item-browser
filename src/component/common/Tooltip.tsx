@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import React, { FC, useCallback, useContext, useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { tooltipStoreContext } from "../../store/TooltipStore";
+import { useVisualViewportBounds } from "../../util/hooks";
 import Entity from "../entity/Entity";
 
 import "./Tooltip.scss";
@@ -68,6 +69,7 @@ const Tooltip: FC = () => {
     const chevronRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const drawerRef = useRef<HTMLDivElement>(null);
 
     const doRender = tooltipStore.isTooltipAvailable;
     const isDrawer = tooltipStore.mode === "drawer";
@@ -76,16 +78,27 @@ const Tooltip: FC = () => {
         tooltipStore.hideTooltip();
     }, []);
 
-    // While a tooltip is shown, tapping/clicking anywhere outside of it (and outside its target icon)
-    // dismisses it, and so does the Escape key. This is the touch/keyboard equivalent of moving the
-    // mouse away, which long-press and focus tooltips lack. The drawer additionally has its backdrop
-    // and close button, but keeping these listeners active for it costs nothing.
+    // The drawer is anchored to the bottom of the visual viewport (not the layout viewport),
+    // so mobile browser chrome such as Firefox's bottom URL bar can no longer occlude it.
+    useVisualViewportBounds(drawerRef, doRender && isDrawer);
+
+    // While a tooltip is shown, tapping/clicking outside of it (and outside its target icon)
+    // dismisses it, and so does the Escape key — the touch/keyboard equivalent of moving the
+    // mouse away, which long-press and focus tooltips otherwise lack. The drawer is excluded
+    // from the pointerdown path on purpose: dismissing it on pointerdown would unmount it before
+    // the browser resolves the tap's click, which then falls through to the link beneath (an
+    // unwanted navigation on Firefox/Safari). The drawer instead dismisses on its backdrop's
+    // click (see below), so the click is resolved against — and consumed by — the still-present
+    // backdrop. Escape still applies to both presentations.
     useEffect((): void | (() => void) => {
         if (!doRender) {
             return;
         }
 
         const handlePointerDown = (event: PointerEvent): void => {
+            if (isDrawer) {
+                return;
+            }
             const node = event.target as Node | null;
             const tooltip = tooltipRef.current;
             const target = tooltipStore.fetchedTarget?.current ?? null;
@@ -106,7 +119,7 @@ const Tooltip: FC = () => {
             document.removeEventListener("pointerdown", handlePointerDown);
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [doRender]);
+    }, [doRender, isDrawer]);
 
     useLayoutEffect((): void => {
         if (!doRender || isDrawer || !tooltipStore.fetchedTarget) {
@@ -137,8 +150,12 @@ const Tooltip: FC = () => {
 
     if (isDrawer) {
         return (
-            <div className="tooltip-drawer">
-                <div className="backdrop" onPointerDown={handleClose} />
+            <div className="tooltip-drawer" ref={drawerRef}>
+                {/* Dismiss on click, not pointerdown: the click is resolved against the DOM as it
+                    stands when the tap completes, so it lands on (and is consumed by) this backdrop
+                    instead of falling through to a link beneath it. `cursor: pointer` is what makes
+                    Safari synthesize the click on this non-interactive div. */}
+                <div className="backdrop" onClick={handleClose} />
                 <div
                     className="sheet"
                     role="dialog"

@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react-dom/test-utils";
-import { useLongPress } from "./hooks";
+import { useLongPress, useVisualViewportBounds } from "./hooks";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -227,5 +227,132 @@ describe("useLongPress", () => {
             jest.advanceTimersByTime(500);
         });
         expect(onLongPress).not.toHaveBeenCalled();
+    });
+});
+
+type FakeVisualViewport = {
+    offsetTop: number;
+    offsetLeft: number;
+    width: number;
+    height: number;
+    addEventListener: jest.Mock;
+    removeEventListener: jest.Mock;
+    emit: (type: string) => void;
+};
+
+function fakeVisualViewport(init: Partial<FakeVisualViewport> = {}): FakeVisualViewport {
+    const listeners: { [type: string]: Array<() => void> } = {};
+    return {
+        offsetTop: 0,
+        offsetLeft: 0,
+        width: 320,
+        height: 500,
+        ...init,
+        addEventListener: jest.fn((type: string, cb: () => void) => {
+            (listeners[type] ||= []).push(cb);
+        }),
+        removeEventListener: jest.fn((type: string, cb: () => void) => {
+            listeners[type] = (listeners[type] || []).filter((entry) => entry !== cb);
+        }),
+        emit: (type: string) => (listeners[type] || []).forEach((cb) => cb()),
+    };
+}
+
+/**
+ * Renders a div driven by useVisualViewportBounds into the document and returns the element
+ * plus a way to toggle the hook's `active` flag (re-rendering) and to unmount.
+ */
+function renderVisualViewportBounds(active: boolean): {
+    element: HTMLDivElement;
+    setActive: (next: boolean) => void;
+    unmount: () => void;
+} {
+    const TestComponent: React.FC<{ active: boolean }> = ({ active }) => {
+        const ref = useRef<HTMLDivElement>(null);
+        useVisualViewportBounds(ref, active);
+        return <div ref={ref} />;
+    };
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const setActive = (next: boolean): void => {
+        act(() => {
+            root.render(<TestComponent active={next} />);
+        });
+    };
+    setActive(active);
+    const element = container.querySelector("div") as HTMLDivElement;
+
+    return {
+        element,
+        setActive,
+        unmount: () => {
+            act(() => {
+                root.unmount();
+            });
+            container.remove();
+        },
+    };
+}
+
+describe("useVisualViewportBounds", () => {
+    let viewport: FakeVisualViewport;
+
+    beforeEach(() => {
+        viewport = fakeVisualViewport({ offsetTop: 12, offsetLeft: 4, width: 320, height: 480 });
+        Object.defineProperty(window, "visualViewport", { configurable: true, get: () => viewport });
+    });
+
+    afterEach(() => {
+        Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
+    });
+
+    test("sizes and positions the element to the visual viewport while active", () => {
+        const { element, unmount } = renderVisualViewportBounds(true);
+
+        expect(element.style.top).toBe("12px");
+        expect(element.style.left).toBe("4px");
+        expect(element.style.width).toBe("320px");
+        expect(element.style.height).toBe("480px");
+
+        unmount();
+    });
+
+    test("re-applies when the visual viewport changes", () => {
+        const { element, unmount } = renderVisualViewportBounds(true);
+
+        act(() => {
+            viewport.height = 300;
+            viewport.offsetTop = 60;
+            viewport.emit("resize");
+        });
+        expect(element.style.height).toBe("300px");
+        expect(element.style.top).toBe("60px");
+
+        unmount();
+    });
+
+    test("does nothing while inactive", () => {
+        const { element, unmount } = renderVisualViewportBounds(false);
+
+        expect(element.style.height).toBe("");
+        expect(viewport.addEventListener).not.toHaveBeenCalled();
+
+        unmount();
+    });
+
+    test("clears the inline overrides and detaches listeners when it goes inactive", () => {
+        const { element, setActive, unmount } = renderVisualViewportBounds(true);
+        expect(element.style.height).toBe("480px");
+
+        setActive(false);
+
+        expect(element.style.top).toBe("");
+        expect(element.style.height).toBe("");
+        expect(viewport.removeEventListener).toHaveBeenCalledWith("resize", expect.any(Function));
+        expect(viewport.removeEventListener).toHaveBeenCalledWith("scroll", expect.any(Function));
+
+        unmount();
     });
 });
