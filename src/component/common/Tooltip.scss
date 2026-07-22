@@ -93,6 +93,9 @@
         animation: tooltip-drawer-fade-in 0.2s ease-out;
         background: $color-overlay;
         bottom: 0;
+        // Marks the backdrop clickable so Safari synthesizes the click that dismisses the drawer
+        // (bare divs are not click targets on iOS without this).
+        cursor: pointer;
         left: 0;
         position: absolute;
         right: 0;

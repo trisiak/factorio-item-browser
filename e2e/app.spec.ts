@@ -264,34 +264,28 @@ test.describe("touch long-press tooltip drawer", () => {
         await gotoItemList(page);
         await openDrawer(page);
 
-        await page.locator(".tooltip-drawer .backdrop").dispatchEvent("pointerdown", {
-            pointerType: "touch",
-            clientX: 5,
-            clientY: 5,
-        });
+        await page.touchscreen.tap(5, 5);
         await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
     });
 
-    test("dismissing via the backdrop does not navigate to the link beneath it", async ({ page }) => {
+    test("the backdrop dismisses on click, not pointerdown, so the tap cannot reach the page beneath", async ({
+        page,
+    }) => {
         await gotoItemList(page);
         await openDrawer(page);
         const urlBefore = page.url();
 
-        // Tapping the backdrop closes the drawer on pointerdown. Firefox/Safari then synthesize
-        // a click at the tap point which — the drawer now gone — lands on the item link beneath.
-        // That ghost click (on a different icon than the long-pressed one, so it is not covered
-        // by the long-press click-suppression) must be swallowed, not followed.
-        await page.locator(".tooltip-drawer .backdrop").dispatchEvent("pointerdown", {
-            pointerType: "touch",
-            clientX: 20,
-            clientY: 120,
-        });
+        // The bug was dismissing on pointerdown: that unmounts the drawer before the browser
+        // resolves the tap's click, which Firefox/Safari then deliver to the item link beneath the
+        // backdrop — an unwanted navigation. So a bare pointerdown must NOT dismiss.
+        const backdrop = page.locator(".tooltip-drawer .backdrop");
+        await backdrop.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 20, clientY: 120 });
+        await expect(page.locator(".tooltip-drawer")).toBeVisible();
+
+        // The click dismisses it. Because the drawer was still mounted, the browser resolved this
+        // click to the backdrop (which consumes it) — it cannot have fallen through to a link.
+        await backdrop.dispatchEvent("click");
         await expect(page.locator(".tooltip-drawer")).toHaveCount(0);
-
-        await page.locator("a[href*='/item/']").nth(6).dispatchEvent("click");
-
-        // Navigation via router5 is synchronous in the link handler, so the URL would already
-        // have changed here had the ghost click been followed.
         expect(page.url()).toBe(urlBefore);
     });
 

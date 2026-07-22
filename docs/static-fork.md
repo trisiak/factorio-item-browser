@@ -376,26 +376,28 @@ should mirror this checklist and the two must stay reconciled.
   long-press drawer. (1) *Backdrop dismissal navigated the page.* Both dismiss
   paths (the backdrop's own `onPointerDown` and the document-level outside-tap
   listener) fired on `pointerdown`, unmounting the drawer before the browser
-  synthesized the tap's `click`; on Firefox/Safari that click was then
-  re-targeted to whatever entity link now sat under the finger, causing an
-  unwanted navigation on a "tap away" (Chromium caches the target at
-  `pointerdown`, so it never reproduced there). `Tooltip.tsx` now swallows that
-  one ghost `click` at the document capture phase after any touch/pen dismissal
-  (a fresh gesture's `pointerdown` or a 700 ms timeout drops the guard, so a
-  deliberate tap is never eaten), and the redundant backdrop handler is gone —
-  the outside-tap listener is the single dismiss path. (2) *Sheet occluded by
-  browser chrome.* The drawer was anchored to `bottom: 0` on a layout-viewport
-  `position: fixed` box, so dynamic bottom chrome (Firefox's bottom URL bar)
-  drew over the sheet. A new `useVisualViewportBounds` hook (`hooks.ts`) sizes
-  and positions the `.tooltip-drawer` to `window.visualViewport` while the
-  drawer is shown (updating on its `resize`/`scroll`), with a `100dvh` CSS
-  fallback; the bottom-anchored sheet then tracks the visible bottom edge.
+  resolved the tap's `click`; on Firefox/Safari that click was then delivered to
+  whatever entity link now sat under the finger, causing an unwanted navigation
+  on a "tap away" (Chromium caches the click target at `pointerdown`, so it never
+  reproduced there). The fix follows standard UI-events click-target semantics
+  rather than a heuristic: the backdrop now dismisses on **`click`** (like the
+  sibling `SidebarCloseOverlay`), so with the drawer still mounted the browser
+  resolves the click to the backdrop and it is consumed there — it can never fall
+  through. The document-level outside-tap listener is scoped to the anchored
+  presentation (`if (isDrawer) return`) so it no longer pre-empts the drawer on
+  `pointerdown`; Escape still dismisses both. The backdrop gets `cursor: pointer`
+  so Safari synthesizes the click on the otherwise non-interactive div. (2)
+  *Sheet occluded by browser chrome.* The drawer was anchored to `bottom: 0` on a
+  layout-viewport `position: fixed` box, so dynamic bottom chrome (Firefox's
+  bottom URL bar) drew over the sheet. A new `useVisualViewportBounds` hook
+  (`hooks.ts`) sizes and positions the `.tooltip-drawer` to `window.visualViewport`
+  while the drawer is shown (updating on its `resize`/`scroll`), with a `100dvh`
+  CSS fallback; the bottom-anchored sheet then tracks the visible bottom edge.
   Tests: jest covers the new hook (apply/update/inactive/cleanup); the e2e
-  long-press spec adds a ghost-click regression (dismiss the backdrop, then a
-  synthesized click on a different item icon must not navigate) and a
-  visual-viewport regression (with a faked shorter visual viewport, the sheet's
-  bottom stays clear of the simulated chrome). Both e2e cases fail on the
-  pre-fix build.
+  long-press spec asserts the backdrop dismisses on click and not on a bare
+  `pointerdown` (so the tap cannot reach the page beneath) and that the sheet
+  stays clear of a faked shorter visual viewport. Both e2e cases fail on the
+  pre-fix (pointerdown-dismiss / layout-viewport) build.
 
 ## FactorioLab → transfer.ts mapping (Phase 1 spec)
 
