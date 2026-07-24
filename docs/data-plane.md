@@ -140,25 +140,34 @@ Ships end-to-end without touching fbe's website code or deploy pipeline:
 exporter changes + committed `browser/` artifacts land in the fbe repo, its
 existing Pages deploy publishes them, this app consumes them.
 
-- [ ] **1a — exporter: browser artifact** (fbe repo, `packages/exporter/`).
-  A per-pack `browser/` output: run the dump flags, compose
-  `icons.webp` + `icons.json` from the pre-rendered icon sprites (the `image`
-  crate is already a dependency; no basisu), and derive `catalog.json` —
-  items/fluids (label, description, order, stack), recipes (label,
-  description, time, ingredients, results, producers), machines (speed,
-  module slots, energy usage, crafting categories), technologies
-  (prerequisites, unlocked recipes, science packs **with unit counts**,
-  time, description). Stamp `schemaVersion`. Small enough to iterate on
-  locally against all three packs.
-- [ ] **1b — publish via fbe's existing data deploy.** Commit each pack's
-  `browser/` dir under `data/output/<id>/` in the fbe repo (a few MB per
-  pack, riding the same commit-and-deploy flow as the editor data) and
-  extend `packs.json` with the additive manifest fields. fbe's Pages deploy
-  then serves the tiers at
-  `…/factorio-blueprint-editor/data/<id>/browser/…` with CORS, no new infra.
-  The added repo weight is ~1–2% of what's already committed and leaves
-  together with it in slice 2. This app's "never commit game data"
-  constraint is unchanged — nothing lands here.
+- [x] **1a — exporter: browser artifact** (fbe repo, `packages/exporter/`,
+  landed on `claude/fib-data-hosting-bv87mv`). A per-pack `browser/` output:
+  the three dump flags (separate invocations; the icon dump needs a display —
+  xvfb works), `catalog.json` derived from `data-raw-dump.json` via typed
+  partial serde structs, `icons.webp` + `icons.json` composed from the
+  game-rendered icon PNGs (64 px cells, 66 px stride, content-deduped; no
+  basisu). 25 unit tests on synthetic fixtures; adversarially reviewed
+  (locale-refactor byte-identity confirmed, atomic manifest write, dump runs
+  disable the injected editor mod — its placeholder icon paths crash
+  `--dump-icon-sprites`, confirmed on a real run); `--skip-browser` keeps a
+  headless editor-only path. Real-run findings worth remembering: the locale
+  dump **does** carry a `descriptions` map (the `.cfg` resolver stays as
+  fallback), and Factorio serializes empty Lua arrays as `{}` (handled by a
+  tolerant deserializer that still fails loudly on non-empty surprises).
+- [x] **1b — publish via fbe's existing data deploy.** All three packs'
+  `browser/` tiers are generated from real runs and committed (~18 MB total:
+  vanilla 210 items / 212 recipes / 196 techs; space-age 297 / 340 / 275,
+  with Space Age's 319 hidden recycling recipes correctly excluded and
+  scrap-recycling correctly kept; **space-exploration 749 items / 1004
+  recipes / 579 techs on SE 0.7.56 + Factorio 2.0.76** — the version basis
+  this app wanted, with real research-unit counts and 141 item
+  descriptions). Notably absent from the fbe SE catalog: the FactorioLab
+  sxp quirks — 0 dummy pseudo-items (real hidden flags), 1 steam fluid (no
+  temperature-variant items), so several of this app's sxp mitigations
+  won't need porting to the new source. `packs.json` carries the additive
+  fields. Serving URL goes live when the fbe branch merges (Pages deploys
+  on master). This app's "never commit game data" constraint is unchanged —
+  nothing landed here.
 - [ ] **1c — FIB: neutral model + second adapter.** Refactor `PackData` to
   consume a small neutral internal model; the FactorioLab adapter
   (`factoriolab.ts`) and a new `PackSource.kind: "fbe"` adapter both map into
