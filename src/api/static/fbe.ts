@@ -247,6 +247,23 @@ export async function loadFbePack(pack: PackDefinition): Promise<PackModel> {
             `The icons of pack "${pack.id}" are malformed: "sheet" and "icons" must be objects.`,
         );
     }
+    // The artifact contract guarantees the sheet file name and dimensions (that's what
+    // spares the Image-measuring pass) — validate them here so drift fails as a clear
+    // pack-named error instead of silently degrading into broken percentage math.
+    const { file, width, height } = icons.sheet;
+    if (
+        typeof file !== "string" ||
+        file === "" ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        (width as number) <= 0 ||
+        (height as number) <= 0
+    ) {
+        throw new ServiceNotAvailableError(
+            `The icons of pack "${pack.id}" are malformed: "sheet" must carry a file name ` +
+                `and positive width/height.`,
+        );
+    }
 
     return mapFbeCatalog(catalog, icons, pack.source.baseUrl);
 }

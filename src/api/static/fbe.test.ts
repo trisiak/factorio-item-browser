@@ -351,4 +351,21 @@ describe("fbe pack adapter", (): void => {
         const badApi = apiFor(catalog, { schemaVersion: 1, icons: {} });
         await expect(badApi.getItemList(1)).rejects.toBeInstanceOf(ServiceNotAvailableError);
     });
+
+    test("a sheet without valid file/dimensions fails loudly instead of degrading", async (): Promise<void> => {
+        // The contract guarantees file + positive dimensions; zero, missing or
+        // non-numeric values must be a clear pack-named error, never NaN CSS or a
+        // silent fall-back to image measuring.
+        for (const sheet of [
+            { file: "icons.webp", width: 0, height: 832 },
+            { file: "icons.webp", height: 832 },
+            { file: "", width: 1024, height: 832 },
+            { file: "icons.webp", width: "1024", height: 832 },
+        ]) {
+            const badApi = apiFor(catalog, { schemaVersion: 1, sheet, icons: {} });
+            await expect(badApi.getItemList(1)).rejects.toThrow(
+                new RegExp(`icons of pack "${fbePack.id}" are malformed`),
+            );
+        }
+    });
 });
