@@ -23,7 +23,9 @@ Keep its checkboxes up to date in the same change that lands work.
   dumps, no icons, no spritesheets, no locale dumps — nothing derived from
   Factorio (Wube) or mod authors' assets. The repo is GPL-3.0-or-later and
   the data is third-party IP; all pack data is fetched at runtime from
-  external URLs (currently FactorioLab's published packs).
+  external URLs — our own published `browser/` artifacts (the sibling fbe
+  fork's Pages site, the default source; see `docs/data-plane.md`) and
+  FactorioLab's published packs.
 - **Do not change the `src/api/transfer.ts` type shapes.** The whole
   conversion strategy is that stores/components stay interface-compatible
   and are fed through the `portalApi` seam (`src/api/PortalApi.ts`).
@@ -72,8 +74,10 @@ anything user-visible.
 
 - The suite (`e2e/app.spec.ts`) runs against the **production build** served by
   `e2e/server.js` with real GitHub Pages semantics (path prefix +
-  `404.html` fallback) and fetches **live FactorioLab data** — it doubles as a
-  canary for upstream data-format drift. No mocks.
+  `404.html` fallback) and fetches **live pack data** — our own artifacts for
+  the default pack and the `fbe data plane` block, FactorioLab's for the specs
+  that pin a FactorioLab combination id. It doubles as a canary for data-format
+  drift on both. No mocks.
 - In sandboxed environments set `PLAYWRIGHT_CHROMIUM_PATH` (e.g.
   `/opt/pw-browsers/chromium`); the config routes only `https://` through
   `HTTPS_PROXY` so the local test server stays direct.

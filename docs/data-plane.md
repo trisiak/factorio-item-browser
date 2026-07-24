@@ -134,11 +134,14 @@ artifact. FactorioLab's scripts are the working reference for dump-flag output
 layouts (MIT, easy to read) — verify exact layouts on the pinned 2.0.76 at
 implementation time rather than from memory.
 
-## Slice 1 — FIB + browser artifacts on fbe's Pages
+## Slice 1 — FIB + browser artifacts on fbe's Pages — **complete**
 
 Ships end-to-end without touching fbe's website code or deploy pipeline:
 exporter changes + committed `browser/` artifacts land in the fbe repo, its
-existing Pages deploy publishes them, this app consumes them.
+existing Pages deploy publishes them, this app consumes them. All five steps
+are done: the artifacts are generated, published and served, both adapters sit
+behind the neutral model, our vanilla pack is the default, and the live e2e
+suite watches the plane.
 
 - [x] **1a — exporter: browser artifact** (fbe repo, `packages/exporter/`,
   landed on `claude/fib-data-hosting-bv87mv`). A per-pack `browser/` output:
@@ -165,9 +168,10 @@ existing Pages deploy publishes them, this app consumes them.
   sxp quirks — 0 dummy pseudo-items (real hidden flags), 1 steam fluid (no
   temperature-variant items), so several of this app's sxp mitigations
   won't need porting to the new source. `packs.json` carries the additive
-  fields. Serving URL goes live when the fbe branch merges (Pages deploys
-  on master). This app's "never commit game data" constraint is unchanged —
-  nothing landed here.
+  fields. **Live** since the fbe branch merged and its Pages deploy ran:
+  `https://trisiak.github.io/factorio-blueprint-editor/data/<pack>/browser/{catalog.json,icons.json,icons.webp}`
+  serves all three packs (200 OK, `Access-Control-Allow-Origin: *`). This
+  app's "never commit game data" constraint is unchanged — nothing landed here.
 - [x] **1c — FIB: neutral model + second adapter.** `PackData` now consumes a
   small neutral model (`src/api/static/model.ts`: items/fluids merged into one
   typed list, recipes, technologies, machines, an icon-rect map and the sheet
@@ -222,27 +226,49 @@ existing Pages deploy publishes them, this app consumes them.
   The FactorioLab entries keep their ids and gained a "(FactorioLab)" label
   suffix (labels are safe to change, ids are not): "Vanilla 2.0
   (FactorioLab)", "Space Age (2.0) (FactorioLab)", "Space Exploration (1.1,
-  FactorioLab)". **Deferred on purpose:** the default pack stays the
-  FactorioLab vanilla and the e2e suite still exercises only FactorioLab
-  packs — the fbe URLs 404 until the fbe branch merges and its Pages deploy
-  runs, and a default pointing at a 404 would break every id-less visit. The
-  follow-up, once serving is live: flip `defaultPack` to `vanilla-2.0-fbe`,
-  add e2e coverage of an fbe pack (the live suite then doubles as a canary for
-  *our* data plane), and decide whether to delist (never re-id) the FactorioLab
-  vanilla/space-age duplicates. `e2e/app.spec.ts` already had its pack-picker
-  selection pinned to the FactorioLab label, so the longer lineup cannot make
-  it pick a not-yet-serving pack.
-- [ ] **1e — verification + docs.** Unit tests for the new adapter mapping
+  FactorioLab)".
+
+  **The default-pack flip, deferred until serving went live, has landed:**
+  `defaultPack` now resolves by pack id (`vanilla-2.0-fbe`) rather than by
+  position in the manifest, so every id-less visit — a bare `/` with no
+  last-pack memory in localStorage — boots on our own data plane. Nothing else
+  moved: the array order, all six combination ids and every label are
+  unchanged, so no user's scoped storage or shared URL is affected. The e2e
+  suite asserts the consequence directly (an id-less visit renders
+  `Setting: Vanilla 2.0`, matched exactly so the FactorioLab entry cannot
+  satisfy it), and the one unit test that asserted the *fallback* pack now
+  references `defaultPack` instead of `packs[0]`. Still open, unchanged:
+  whether to delist (never re-id) the FactorioLab vanilla/space-age duplicates.
+- [x] **1e — verification + docs.** Unit tests for the new adapter mapping
   landed with 1c (`src/api/static/fbe.test.ts`, 13 tests on a tiny synthetic
   catalog + icons fixture — items/fluids merge and shared-id precedence,
   ordering, recipe icon fallback, descriptions, research counts/formulas and
   trigger technologies, machine mapping, sheet-dimension icon CSS with the
   `Image` constructor booby-trapped, and both malformed-format errors; no
-  game-derived data, per CLAUDE.md). Still open: e2e coverage of the fbe packs
-  and the default-pack flip (both blocked on the fbe merge, see 1d);
-  update `static-fork.md`'s roadmap + Bigger picture, add a pointer to this
-  plan in fbe's docs/CLAUDE.md (they don't mention this fork yet), and note
-  progress on fbe issue #8 (it closes in slice 2).
+  game-derived data, per CLAUDE.md).
+
+  **The live e2e suite now covers our own data plane.** With the default pack
+  flipped, every spec that does not pin a combination id fetches the fbe
+  vanilla artifact, so `npm run test:e2e` is a canary for *our* pipeline the
+  same way it already was for FactorioLab's. Existing assertions were re-based
+  on the real catalog (first item = wooden chest, the electronic-circuit recipe
+  producing exactly the three assembling machines, the icon CSS referencing the
+  published `…/vanilla-2.0/browser/icons.webp`, the pack switcher moving to the
+  fbe Space Age entry by full label). A new `fbe data plane` block covers what
+  only this source has: item and recipe descriptions, the "× N" research-units
+  row (automation = 10) and the level formula an infinite technology shows
+  instead (`mining-productivity-4` = `2500*(L - 3)`), SE 0.7.56 on Factorio
+  2.0.76 listing 774 entities with icons off its own sheet, and that pack's
+  exact mod set on the settings page. The FactorioLab-specific specs stay on
+  the FactorioLab pack, pinned by long-form combination id and retitled to say
+  so — they cover mitigations (dummy pseudo-items, duplicate display names,
+  iconText overlays) that exist only in that source. The visual tour walks the
+  fbe packs, keeping one FactorioLab pack for the disambiguation shot.
+  32 functional specs + 17 tour specs green against live data.
+
+  Still open (docs housekeeping, not code): add a pointer to this plan in fbe's
+  docs/CLAUDE.md (they don't mention this fork yet), and note progress on fbe
+  issue #8 (it closes in slice 2).
 
 **Slice-1 non-goals:** multi-locale catalogs (the dump-per-language mechanism
 is proven by FactorioLab, but en-only ships first); moving the `editor/`
@@ -281,6 +307,10 @@ a corner:
 - **Data repo name** — `factorio-pack-data`? (Working name; decide when
   slice 2 creates it.)
 - **Delist or keep** the FL-sourced vanilla/space-age duplicates after 1d.
+  Kept for now. Note that whatever is decided, the manifest should retain at
+  least one FactorioLab pack: it is what keeps that adapter under live e2e
+  coverage (today the sxp entry, which the FL-specific specs pin), and the
+  ready-made packs FactorioLab publishes remain one entry away.
 - ~~**`icons.json` vs. rects embedded in `catalog.json`**~~ — **settled in
   1a/1c: separate.** It keeps the catalog cacheable across icon-only regens
   and lets the sheet name its own file and publish its dimensions, which is

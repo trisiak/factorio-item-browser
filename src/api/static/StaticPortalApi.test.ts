@@ -5,7 +5,7 @@ import { SettingStatus } from "../../util/const";
 import { SidebarEntityData } from "../transfer";
 import { clearPackDataCache, StaticPortalApi } from "./StaticPortalApi";
 import { FactorioLabData, FactorioLabItem } from "./factoriolab";
-import { packs } from "./packs";
+import { defaultPack, packs } from "./packs";
 
 // A fully synthetic dataset — deliberately not resembling any real game data.
 const fixture: FactorioLabData = {
@@ -179,8 +179,9 @@ describe("StaticPortalApi", (): void => {
             },
         ];
 
-        // Store a sidebar under the default pack (packs[0]) scope.
-        storageManager.combinationId = CombinationId.fromFull(packs[0].combinationId);
+        // Store a sidebar under the default pack's scope — whichever pack that is; the
+        // fallback follows `defaultPack`, not a fixed position in the manifest.
+        storageManager.combinationId = CombinationId.fromFull(defaultPack.combinationId);
         storageManager.sidebarEntities = sidebar;
 
         // Simulate a visit carrying a well-formed but unknown/stale combination id, the way
@@ -192,9 +193,9 @@ describe("StaticPortalApi", (): void => {
         // The session resolves to the fallback pack and, crucially, re-scopes storage to it
         // before reading, so the fallback pack's saved sidebar survives instead of being
         // read (and later overwritten) as an empty list under the phantom id.
-        expect(initData.setting.combinationId).toBe(packs[0].combinationId);
+        expect(initData.setting.combinationId).toBe(defaultPack.combinationId);
         expect(initData.sidebarEntities).toEqual(sidebar);
-        expect(storageManager.combinationId?.toFull()).toBe(packs[0].combinationId);
+        expect(storageManager.combinationId?.toFull()).toBe(defaultPack.combinationId);
     });
 
     test("getItemList excludes technologies, dummies and orphans, and types fluids", async (): Promise<void> => {

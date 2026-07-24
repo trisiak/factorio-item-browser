@@ -59,10 +59,10 @@ export const packs: PackDefinition[] = [
         combinationId: "fab1a000-0000-4000-8000-000000000003",
         source: { kind: "factoriolab", baseUrl: `${FACTORIOLAB_DATA_ROOT}/sxp` },
     },
-    // The fbe-sourced packs. Their pack ids carry an "-fbe" suffix because the plain ids are
-    // taken by the FactorioLab entries above (pack ids key the in-memory and localStorage
-    // caches, so they must stay unique here); the ids in the data host's URLs are the plain
-    // ones. Serving goes live when the fbe branch publishing the browser artifacts merges.
+    // The fbe-sourced packs — our own data plane, live on the fbe fork's Pages deploy. Their
+    // pack ids carry an "-fbe" suffix because the plain ids are taken by the FactorioLab
+    // entries above (pack ids key the in-memory and localStorage caches, so they must stay
+    // unique here); the ids in the data host's URLs are the plain ones.
     {
         id: "vanilla-2.0-fbe",
         label: "Vanilla 2.0",
@@ -84,12 +84,14 @@ export const packs: PackDefinition[] = [
 ];
 
 /**
- * The pack a visit without a (known) combination id falls back to. Still the FactorioLab
- * vanilla set: the fbe-sourced URLs only start serving once the fbe branch merges and its
- * Pages deploy runs, and the default must never point at a 404. Flipping it to
- * `vanilla-2.0-fbe` is the deferred follow-up tracked in docs/data-plane.md (slice 1d).
+ * The pack a visit without a (known) combination id falls back to: the fbe-sourced vanilla
+ * set, i.e. our own data plane, now that it serves (docs/data-plane.md, slice 1d). Every
+ * id-less visit — a bare "/" with no last-pack memory — therefore boots on the pack that
+ * carries descriptions, real research-unit counts and the exact mod set. The FactorioLab
+ * packs stay in the lineup, reachable by their (unchanged) combination ids.
  */
-export const defaultPack = packs[0];
+const DEFAULT_PACK_ID = "vanilla-2.0-fbe";
+export const defaultPack: PackDefinition = packs.find((pack) => pack.id === DEFAULT_PACK_ID) ?? packs[0];
 
 export function findPackByCombinationId(combinationId: string): PackDefinition | null {
     return packs.find((pack) => pack.combinationId === combinationId) ?? null;
