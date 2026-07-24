@@ -383,6 +383,7 @@ export class PackData {
             name: item.id,
             label: item.name,
             description: "",
+            stackSize: item.stack,
             results: entities,
             numberOfResults: recipeIds.length,
         };

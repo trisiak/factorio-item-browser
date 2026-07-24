@@ -284,6 +284,16 @@ describe("StaticPortalApi", (): void => {
         expect(data.results[0].name).toBe("gizmo-recipe");
     });
 
+    test("getItemProductRecipes carries the item's stack size", async (): Promise<void> => {
+        const data = await api.getItemProductRecipes("item", "gizmo", 1);
+        expect(data.stackSize).toBe(50);
+    });
+
+    test("getItemIngredientRecipes omits stack size for fluids", async (): Promise<void> => {
+        const data = await api.getItemIngredientRecipes("fluid", "goo", 1);
+        expect(data.stackSize).toBeUndefined();
+    });
+
     test("getItemIngredientRecipes rejects unknown items", async (): Promise<void> => {
         await expect(api.getItemIngredientRecipes("item", "nope", 1)).rejects.toBeInstanceOf(PageNotFoundError);
     });

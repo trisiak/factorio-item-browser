@@ -15,6 +15,7 @@ type Item = {
     name: string;
     label: string;
     description: string;
+    stackSize?: number;
 };
 
 const emptyItem: Item = {
@@ -111,6 +112,7 @@ export class ItemStore {
                     name: productsData.name,
                     label: productsData.label,
                     description: productsData.description,
+                    stackSize: productsData.stackSize,
                 };
 
                 this.sidebarStore.addViewedEntity(productsData.type, productsData.name, productsData.label);
