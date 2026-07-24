@@ -199,10 +199,14 @@ existing Pages deploy publishes them, this app consumes them.
   formula for infinite technologies. Verified against the real artifacts of
   all three packs (read-only): every item/fluid and technology icon resolves,
   research counts and descriptions map through, machine stats and the
-  technology ordering look right. One artifact-side nit worth an exporter
-  follow-up: a recipe whose only result is a *hidden* item (`rocket-part`,
-  plus SE's `se-space-probe-rocket-deploy`) has no own `iconId` and no icon to
-  fall back to, so it renders icon-less — 1–2 recipes per pack.
+  technology ordering look right. Two artifact-side nits this validation
+  surfaced were fixed at the exporter the same day and the artifacts
+  regenerated: the `parameter-0…9` placeholder prototypes (present as items,
+  fluids *and* recipes) are now hidden in every category, and **every recipe
+  carries an `iconId`** — the icon dump renders a game-composed effective
+  icon for every recipe, so hidden-result recipes (`rocket-part`, SE's
+  `se-space-probe-rocket-deploy`) got theirs from there. The adapter's
+  first-result fallback stays as a belt-and-suspenders path.
 - [x] **1d — pack lineup.** Three fbe-sourced entries added, with **new**
   combination ids (ids are forever; swapping a pack's data basis under an
   existing id would silently repoint users' scoped state and shared URLs) and
