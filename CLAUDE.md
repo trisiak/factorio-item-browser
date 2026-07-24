@@ -24,9 +24,15 @@ Keep its checkboxes up to date in the same change that lands work.
   Factorio (Wube) or mod authors' assets. The repo is GPL-3.0-or-later and
   the data is third-party IP; all pack data is fetched at runtime from
   external URLs (currently FactorioLab's published packs).
-- **Do not change the `src/api/transfer.ts` type shapes.** The whole
-  conversion strategy is that stores/components stay interface-compatible
-  and are fed through the `portalApi` seam (`src/api/PortalApi.ts`).
+- **Don't make breaking changes to the `src/api/transfer.ts` type shapes.**
+  The whole conversion strategy is that stores/components stay
+  interface-compatible and are fed through the `portalApi` seam
+  (`src/api/PortalApi.ts`). Additive **optional** fields are fine, and
+  already used (the fork's technology/research fields, `ItemRecipesData`'s
+  `description` and `stackSize`); renaming, removing, retyping, or making an
+  existing field required all desync a consumer and stay off-limits. This is
+  an independent fork with no upstream PRs, so byte-parity with upstream
+  `transfer.ts` is not itself a goal — seam integrity is.
 - Preserve the `portalApi` singleton export name and method signatures.
 - **Never change the synthetic combination ids in `src/api/static/packs.ts`.**
   They scope users' localStorage (sidebar, options, last pack) and appear in
