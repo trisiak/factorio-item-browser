@@ -3,6 +3,7 @@ import React, { FC, Fragment, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { technologyStoreContext } from "../../store/TechnologyStore";
 import { useDocumentTitle } from "../../util/hooks";
+import Detail from "../common/Detail";
 import DetailsHead from "../common/DetailsHead";
 import Section from "../common/Section";
 import Entity from "../entity/Entity";
@@ -27,9 +28,16 @@ const TechnologyDetailsPage: FC = () => {
                 type="technology"
                 name={technology.name}
                 title={t("technology-details.headline", { label: technology.label || technology.name })}
-            />
+            >
+                <Detail hidden={!technology.description}>{technology.description}</Detail>
+            </DetailsHead>
 
-            <TechnologyResearch researchTime={technology.researchTime} ingredients={technology.ingredients} />
+            <TechnologyResearch
+                researchTime={technology.researchTime}
+                researchCount={technology.researchCount}
+                researchCountFormula={technology.researchCountFormula}
+                ingredients={technology.ingredients}
+            />
 
             {technology.numberOfUnlockedRecipes > 0 ? (
                 <Section headline={t("technology-details.unlocks", { count: technology.numberOfUnlockedRecipes })}>

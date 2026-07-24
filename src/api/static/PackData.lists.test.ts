@@ -1,5 +1,5 @@
 import { PackData } from "./PackData";
-import { FactorioLabData } from "./factoriolab";
+import { FactorioLabData, mapFactorioLabData } from "./factoriolab";
 import { packs } from "./packs";
 
 /**
@@ -119,7 +119,7 @@ const fixture: FactorioLabData = {
 };
 
 describe("PackData list ordering", (): void => {
-    const packData = new PackData(packs[0], fixture);
+    const packData = new PackData(packs[0], mapFactorioLabData(fixture, packs[0].source.baseUrl));
 
     test("getRecipeList keeps data-array order and excludes technology recipes", (): void => {
         const list = packData.getRecipeList(1);

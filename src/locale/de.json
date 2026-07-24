@@ -165,6 +165,7 @@
         "leads-to_plural": "Führt zu {{count}} Technologien",
         "prerequisites": "Benötigt Forschung",
         "research": "Forschungskosten",
+        "research-count": "Forschungseinheiten",
         "title": "Technologie: {{label}} - Factorio Item Browser",
         "unlocks": "Schaltet {{count}} Rezept frei",
         "unlocks_plural": "Schaltet {{count}} Rezepte frei"

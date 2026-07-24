@@ -1,8 +1,16 @@
 import { expect, Page, test } from "@playwright/test";
 
 /**
- * End-to-end coverage of the static fork against live FactorioLab data, served with
- * GitHub Pages semantics (path prefix + 404.html fallback) by e2e/server.js.
+ * End-to-end coverage of the static fork against live pack data, served with GitHub Pages
+ * semantics (path prefix + 404.html fallback) by e2e/server.js. Nothing is mocked, so the
+ * suite doubles as a canary for data drift on both sources it fetches:
+ *
+ *  - **our own data plane** (the fbe fork's published `browser/` artifacts, see
+ *    docs/data-plane.md) — `vanilla-2.0-fbe` is the default pack, so every spec that does
+ *    not pin a combination id exercises it;
+ *  - **FactorioLab** — kept under test by the specs that pin a FactorioLab pack via its
+ *    long-form combination id, because the quirks they cover (dummy pseudo-items,
+ *    duplicate display names, iconText overlays) are artifacts of that source alone.
  *
  * Pack ids: the synthetic combination ids live in src/api/static/packs.ts; the short
  * forms appearing in URLs are their base62 encodings.
@@ -12,7 +20,21 @@ const SHORT_ID_PATTERN = "[0-9a-zA-Z]{22}";
 // Anchored to a path segment (leading slash + trailing-slash lookahead, capture group 1)
 // so extracting it from a URL can never accidentally latch onto an asset contenthash.
 const SHORT_ID = new RegExp(`/(${SHORT_ID_PATTERN})(?=/)`);
+// The FactorioLab-sourced Space Exploration pack (Factorio 1.1 basis).
 const SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000003";
+// The fbe-sourced Space Exploration pack — the same mod on Factorio 2.0 (SE 0.7.56).
+const FBE_SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000013";
+// The spritesheets our own artifacts publish, which the generated icon CSS must reference.
+const FBE_DATA_ROOT = "https://trisiak.github.io/factorio-blueprint-editor/data";
+const FBE_VANILLA_SHEET = `${FBE_DATA_ROOT}/vanilla-2.0/browser/icons.webp`;
+const FBE_SXP_SHEET = `${FBE_DATA_ROOT}/space-exploration/browser/icons.webp`;
+// The two Space Age entries in the settings picker. Their labels differ only by the source
+// suffix, so pack selection must match a full option label, never a substring.
+const FBE_SPACE_AGE_LABEL = "Space Age (2.0)";
+const FL_SPACE_AGE_LABEL = "Space Age (2.0) (FactorioLab)";
+// The default pack's name, as the sidebar/header renders it. Matched exactly (quoted text
+// engine) so it cannot also match the "Vanilla 2.0 (FactorioLab)" entry.
+const DEFAULT_PACK_SETTING = 'text="Setting: Vanilla 2.0"';
 
 // The header search field (desktop inline box / opened mobile drawer both expose it).
 const SEARCH_INPUT = ".header-search input[type=search]";
@@ -26,13 +48,20 @@ test("boots via the 404 fallback and redirects to the short-id URL", async ({ pa
     await gotoItemList(page);
 
     await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID_PATTERN}/items`));
+    // With no stored state, an id-less visit resolves to the default pack — the fbe-sourced
+    // vanilla set (src/api/static/packs.ts), not the identically-shaped FactorioLab entry.
+    await expect(page.locator(DEFAULT_PACK_SETTING).first()).toBeVisible();
+    // 200 items + 8 fluids in that catalog; asserted loosely to tolerate regenerations.
     expect(await page.locator("a[href*='/item/'], a[href*='/fluid/']").count()).toBeGreaterThan(100);
 });
 
 test("item icons render from the pack spritesheet", async ({ page }) => {
     await gotoItemList(page);
 
-    // The icon CSS is injected asynchronously after the batched style request resolves.
+    // The icon CSS is injected asynchronously after the batched style request resolves, and
+    // must point at the sheet our own artifact publishes next to its catalog — the file name
+    // comes from icons.json, and its dimensions (also published there) drive the percentage
+    // geometry without any image-measuring round trip.
     await expect
         .poll(() =>
             page
@@ -40,15 +69,18 @@ test("item icons render from the pack spritesheet", async ({ page }) => {
                 .first()
                 .evaluate((el) => getComputedStyle(el).backgroundImage),
         )
-        .toContain("icons.webp");
+        .toContain(FBE_VANILLA_SHEET);
 });
 
 test("item details show recipes and fill the sidebar", async ({ page }) => {
     await gotoItemList(page);
 
+    // The list keeps the catalog's display order, so the first tile is the first prototype of
+    // the game's first item group — the wooden chest in vanilla.
+    await expect(page.locator("a[href*='/item/']").first()).toHaveAttribute("href", /\/item\/wooden-chest$/);
     await page.locator("a[href*='/item/']").first().click();
     await expect(page.locator(".entity").first()).toBeVisible();
-    await expect(page.locator("h1")).toContainText(/Item:/);
+    await expect(page.locator("h1")).toContainText("Item: Wooden chest");
 
     // The visited item lands in the "Last viewed" sidebar (persisted to localStorage).
     await expect(page.locator(".sidebar-entity, [class*=sidebar] .entity").first()).toBeVisible();
@@ -61,7 +93,10 @@ test("recipe details list producing machines", async ({ page }) => {
 
     await page.goto(`/${shortId}/recipe/electronic-circuit`);
     await expect(page.locator(".machine-entity").first()).toBeVisible();
-    expect(await page.locator(".machine-entity").count()).toBeGreaterThan(0);
+    // The catalog bakes the producers into the recipe: the three assembling machines whose
+    // crafting categories cover "crafting".
+    expect(await page.locator(".machine-entity").count()).toBe(3);
+    await expect(page.locator(".machine-entity h3").last()).toHaveText("Assembling machine 3");
 });
 
 test("machine item page lists the recipes it can craft", async ({ page }) => {
@@ -91,14 +126,20 @@ test("settings page switches packs", async ({ page }) => {
         .locator("select")
         .first()
         .evaluate((el: HTMLSelectElement) => Array.from(el.options).map((option) => option.textContent || ""));
-    expect(packOptions.join(",")).toContain("Space Age");
+    // Both sources are in the lineup, distinguishable only by the label suffix.
+    expect(packOptions).toContain(FBE_SPACE_AGE_LABEL);
+    expect(packOptions).toContain(FL_SPACE_AGE_LABEL);
 
+    // Switch to the fbe-sourced Space Age pack. Matched on the FULL option label: the
+    // FactorioLab entry's label contains this one as a prefix, so a substring match would
+    // pick whichever entry the picker happens to sort first.
     const spaceAgeValue = await page
         .locator("select")
         .first()
         .evaluate(
-            (el: HTMLSelectElement) =>
-                Array.from(el.options).find((option) => /Space Age/.test(option.textContent || ""))?.value,
+            (el: HTMLSelectElement, label: string) =>
+                Array.from(el.options).find((option) => (option.textContent || "").trim() === label)?.value,
+            FBE_SPACE_AGE_LABEL,
         );
     await page.locator("select").first().selectOption(spaceAgeValue as string);
     await page.locator(".button", { hasText: "Change to" }).click();
@@ -106,14 +147,22 @@ test("settings page switches packs", async ({ page }) => {
     // Wait for the app to boot on the new pack before navigating on: the boot also
     // persists the last-pack memory that the id-less visit below relies on.
     await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID_PATTERN}`));
-    await expect(page.locator("text=Setting: Space Age").first()).toBeVisible();
+    await expect(page.locator(`text="Setting: ${FBE_SPACE_AGE_LABEL}"`).first()).toBeVisible();
 
-    // An id-less visit remembers the switched pack (localStorage last-pack fallback).
+    // An id-less visit remembers the switched pack (localStorage last-pack fallback), i.e.
+    // it no longer falls back to the default pack.
     await gotoItemList(page, "/items");
-    await expect(page.locator("text=Setting: Space Age").first()).toBeVisible();
+    await expect(page.locator(`text="Setting: ${FBE_SPACE_AGE_LABEL}"`).first()).toBeVisible();
+    await expect(page.locator(DEFAULT_PACK_SETTING)).toHaveCount(0);
 });
 
-test.describe("Space Exploration (sxp)", () => {
+test.describe("Space Exploration, FactorioLab source (sxp)", () => {
+    // These specs deliberately stay on the FactorioLab-sourced pack, pinned by its long-form
+    // combination id so the default-pack flip cannot drag them onto our own data plane: every
+    // behaviour under test is a mitigation of a FactorioLab artifact — mod-internal `-dummy-`
+    // pseudo-items, entities sharing a display name, and the iconText overlays that tell
+    // steam-temperature variants apart. Our own catalog has none of those (it carries the
+    // game's real hidden flags and one steam fluid), so this is the FL adapter's coverage.
     test("loads via the long-form combination id and hides calculator artifacts", async ({ page }) => {
         await gotoItemList(page, `/${SXP_FULL_ID}/items`);
 
@@ -146,6 +195,100 @@ test.describe("Space Exploration (sxp)", () => {
             els.map((el) => getComputedStyle(el, "::after").content).filter((content) => /\d/.test(content)),
         );
         expect(overlays.length).toBeGreaterThan(0);
+    });
+});
+
+test.describe("fbe data plane", () => {
+    // What only our own artifacts carry (docs/data-plane.md): in-game descriptions, real
+    // research-unit counts, the exact mod set, and Space Exploration on Factorio 2.0. The
+    // vanilla specs run on the default pack; the SE ones pin the fbe SE combination id.
+
+    test("the item page shows the item's in-game description", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
+
+        // One of the 36 vanilla items the locale dump has a description for. FactorioLab
+        // carries none at all, so this text can only come from our own catalog.
+        await page.goto(`/${shortId}/item/landfill`);
+        await expect(page.locator("h1")).toContainText("Item: Landfill");
+        await expect(page.locator(".details-head .detail").first()).toHaveText(
+            "Can be placed on water to create terrain you can build on.",
+        );
+    });
+
+    test("a technology page shows the real research-unit count", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
+
+        // Automation costs 10 units of 1 automation science pack at 10s each. FactorioLab
+        // models research as a recipe and drops the count, so the row is absent there.
+        await page.goto(`/${shortId}/technology/automation`);
+        await expect(page.locator("h1")).toContainText("Technology: Automation");
+        await expect(page.locator("h2", { hasText: "Research cost" })).toBeVisible();
+
+        const countRow = page.locator(".recipe-item", { hasText: "Research units" });
+        await expect(countRow).toBeVisible();
+        await expect(countRow.locator(".amount")).toHaveText("× 10");
+
+        // The technology description comes from the same dump.
+        await expect(page.locator(".details-head .detail").first()).toHaveText(
+            "Key technology for automatic mass production.",
+        );
+    });
+
+    test("an infinite technology shows its level formula instead of a count", async ({ page }) => {
+        await gotoItemList(page);
+        const shortId = (page.url().match(SHORT_ID) || ["", ""])[1];
+
+        // Infinite technologies have no fixed unit count — the prototype states a formula
+        // over the level instead, and it is rendered verbatim in the count's place.
+        await page.goto(`/${shortId}/technology/mining-productivity-4`);
+        await expect(page.locator("h1")).toContainText("Technology: Mining productivity");
+
+        const countRow = page.locator(".recipe-item", { hasText: "Research units" });
+        await expect(countRow).toBeVisible();
+        await expect(countRow.locator(".amount")).toHaveText("× 2500*(L - 3)");
+    });
+
+    test("Space Exploration on Factorio 2.0 lists SE content with icons from its own sheet", async ({ page }) => {
+        await gotoItemList(page, `/${FBE_SXP_FULL_ID}/items`);
+
+        // 739 items + 35 fluids, all listable: the exporter applies the game's real hidden
+        // flags, so there is nothing to filter out on this side.
+        expect(await page.locator("a[href*='/item/'], a[href*='/fluid/']").count()).toBeGreaterThan(500);
+        await expect(page.locator("a[href$='/item/se-rocket-launch-pad']").first()).toBeVisible();
+
+        await expect
+            .poll(() =>
+                page
+                    .locator("a[href$='/item/se-rocket-launch-pad']")
+                    .first()
+                    .evaluate((el) => getComputedStyle(el).backgroundImage),
+            )
+            .toContain(FBE_SXP_SHEET);
+    });
+
+    test("the Space Exploration pack reports its exact mod set", async ({ page }) => {
+        // The catalog names every loaded mod with its version — the version basis this app
+        // wanted (docs/static-fork.md quirk #6: FactorioLab's sxp pack is still on 1.1).
+        await page.goto(`/${FBE_SXP_FULL_ID}/settings`);
+
+        const mod = page.locator(".mod-entity", { has: page.locator("h3", { hasText: /^space-exploration$/ }) });
+        await expect(mod).toBeVisible();
+        await expect(mod).toContainText("0.7.56");
+        await expect(page.locator(".mod-entity", { has: page.locator("h3", { hasText: /^base$/ }) })).toContainText(
+            "2.0.76",
+        );
+    });
+
+    test("recipe details show the recipe's own description", async ({ page }) => {
+        // Recipe descriptions are rare (none in vanilla, 37 in SE) but they map through the
+        // same locale dump as the item ones.
+        await page.goto(`/${FBE_SXP_FULL_ID}/recipe/se-bio-sludge`);
+        await expect(page.locator("h1")).toContainText("Recipe: Biosludge from Biomass");
+        await expect(page.locator(".details-head .detail").first()).toHaveText(
+            "The main way to generate biosludge long-term, this recipe can form part of a biosludge production loop.",
+        );
     });
 });
 

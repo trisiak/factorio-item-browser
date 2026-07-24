@@ -22,6 +22,12 @@ should mirror this checklist and the two must stay reconciled.
   (Space Age), `sxp` (Space Exploration + AAI), `kr2`, and more. Zero hosting
   to solve on our side. Schema spec: `factoriolab/factoriolab` repo,
   `src/data/schema/*.ts`.
+  **Superseded as the default** by our own data plane (slice 1 of
+  [`docs/data-plane.md`](data-plane.md), complete): a second source kind
+  (`fbe`) behind the same seam consumes the `browser/` artifacts our exporter
+  publishes, and `defaultPack` is now the fbe-sourced vanilla set. FactorioLab
+  stays an allowed, supported source kind — its packs remain one manifest entry
+  away, and its entries keep their combination ids.
 - **Provider seam, not a rewrite.** A static implementation sits behind the
   existing `portalApi` singleton (`src/api/PortalApi.ts`) and returns the
   exact `src/api/transfer.ts` shapes, so stores and components stay untouched.
@@ -427,7 +433,10 @@ Accepted gaps with this source: no descriptions; thin localization (inline
 English; `i18n/ja|zh.json` for some packs); `sxp` is a stock SE set, not the
 fbe fork's exact SE-on-2.0 mod list; technologies must be filtered; machine
 slot counts absent; amounts may be fractional strings (Rational) — normalize
-to numbers.
+to numbers. These gaps are exactly what the `fbe` source kind closes (all but
+the machine slot counts, which neither source publishes); this table still
+describes the FactorioLab adapter, which is unchanged and still serves the
+FactorioLab entries in the manifest.
 
 - [x] **E2E suite (post-merge).** Playwright specs (`e2e/app.spec.ts`)
   covering boot/redirect via the 404 fallback, icon CSS application, item →
@@ -438,8 +447,14 @@ to numbers.
   collapsed hamburger + search-icon header, the off-canvas sidebar drawer and
   its close controls, mobile search open/close, and the dropped medium-and-up
   recipe separator. Runs against the production build served with GitHub Pages semantics
-  (`e2e/server.js`) and live FactorioLab data — a canary for upstream
-  format drift. CI job `E2E (Playwright)` in `ci.yaml`. Writing the suite
+  (`e2e/server.js`) and live pack data — a canary for format drift on both
+  sources. **Since the data-plane flip** (data-plane.md, 1d/1e) the specs that
+  do not pin a combination id run on the fbe-sourced default pack, so the suite
+  watches *our* pipeline; a dedicated `fbe data plane` block covers what only
+  that source carries (descriptions, research-unit counts and formulas,
+  SE 0.7.56 on Factorio 2.0.76, exact mod sets), while the sxp specifics stay
+  pinned to the FactorioLab pack by long-form combination id — they test
+  FactorioLab-only artifacts. CI job `E2E (Playwright)` in `ci.yaml`. Writing the suite
   surfaced and fixed a real gap: the selected pack is now remembered in
   localStorage (`staticLastPack`), so id-less visits (bare `/`) resolve to
   the last browsed pack instead of always reverting to the default.
@@ -450,9 +465,10 @@ to numbers.
   embeds an end-of-test screenshot per test, so it doubles as a visual gallery
   of the rendered UI. Download `playwright-report` from the run and open
   `index.html` to inspect. For a deliberate, curated walk of the key surfaces
-  (item list / detail / recipe / search / settings across Vanilla, Space Age
-  and Space Exploration, plus the mobile header/drawer/search/recipe states
-  and the long-press tooltip drawer),
+  (item list / detail / recipe / search / settings across the fbe-sourced
+  Vanilla, Space Age and Space Exploration packs — plus one FactorioLab pack
+  for the search disambiguation only that source produces — and the mobile
+  header/drawer/search/recipe states and the long-press tooltip drawer),
   the **visual tour** (`e2e/tour.spec.ts`, `npm run test:e2e:tour`) writes
   full-page screenshots to `./screenshots` (gitignored) and attaches them to
   the report. The tour is a separate Playwright project (`--project=tour`),
@@ -465,9 +481,10 @@ to numbers.
   CI (`ci.yaml`) triggers on `pull_request` (plus master pushes), so every job
   — `Tests`, `Coding Guidelines`, `Type Checker`, `Build`, `E2E (Playwright)`
   and `E2E Tour (Visual)` — surfaces as a PR check that can be marked required
-  in branch protection. Caveat: the two e2e jobs fetch live FactorioLab data,
-  so an upstream data change can turn them red independently of the diff;
-  `retries: 2` on CI absorbs transient flakes.
+  in branch protection. Caveat: the two e2e jobs fetch live pack data — ours
+  and FactorioLab's — so a regenerated artifact or an upstream data change can
+  turn them red independently of the diff; `retries: 2` on CI absorbs transient
+  flakes.
 
 - [x] **Tooling / build-config maintenance.** The `--legacy-peer-deps` install
   ritual is gone: `react-sortablejs` moved to `^6.1.4` (its peers accept
@@ -580,33 +597,35 @@ proposed mitigations:
 6. **Version basis mismatch** — FactorioLab's sxp is **Factorio 1.1.109 +
    SE 0.6.138**, while the fbe fork's own SE pack is SE 0.7.56 on Factorio
    2.0.76. Content differs accordingly (recipes, buildings, balancing).
-   Accepted until the own-pack adapter exists — this, not the cosmetic
-   quirks above, is the real reason the custom exporter will eventually be
-   worth it.
+   This, not the cosmetic quirks above, was the real reason the custom
+   exporter was worth it — and it is **closed**: "Space Exploration (2.0)"
+   (combination id `…0013`) serves SE 0.7.56 on 2.0.76 from our own artifact,
+   with the exact 35-mod set on its settings page. The FactorioLab sxp entry
+   stays listed (its id is forever) and is what the quirk mitigations above,
+   and their e2e specs, still cover.
 
-## Next steps (roadmap, in leverage order)
+## Next steps (roadmap)
 
-1. **Exact packs without the custom exporter (the cheap big win).**
-   FactorioLab's export pipeline is an MIT-licensed Factorio *mod*
-   ([`factoriolab/factoriolab-export`](https://github.com/factoriolab/factoriolab-export)):
-   load the exact mod set (e.g. the fbe fork's SE 0.7.56 on Factorio 2.0.76)
-   in a local Factorio and it dumps `data.json` + `icons.png` in exactly the
-   format this app already consumes. Host the two files anywhere with CORS
-   (the fbe fork's Pages data dir, or the future data repo — never this
-   repo), and it's **one new entry in `src/api/static/packs.ts`, zero code
-   changes**. Closes the sxp version-basis gap (quirk #6). Descriptions
-   remain out of reach (the FL schema has none).
-2. **More ready-made FactorioLab packs** are one manifest entry away if ever
-   wanted: `kr2` (Krastorio 2), `kr2sxp`, `sea` (Sea Block), `pys`
-   (Pyanodons), `bobang`, `ir3`, `nls`, vanilla `1.1`, and more — see
-   `factoriolab/factoriolab` `src/data/datasets.ts` for the registry.
-3. **Data plane (fbe-side, resolves fbe issue #8).** Evict `data/output/`
-   from the fbe repo into a dedicated data repo with its own Pages deploy;
-   fbe consumes via `VITE_DATA_URL` (proven by its PR previews); the packs
-   from step 1 live on the same host. Cross-link the two repos' docs — fbe's
-   currently don't mention this fork at all.
-4. **Custom exporter browser-artifacts** (descriptions, multi-locale labels)
-   only when step 1's FL-format output feels limiting. Park until then.
+1. **The data plane — own pack data, hosted by us.** The plan lives in
+   **[`docs/data-plane.md`](data-plane.md)** (design record + tracker,
+   spanning this repo, the fbe fork, and — in its second slice — a new
+   data repo). It
+   supersedes the earlier idea of using the `factoriolab-export` mod as a
+   stopgap: the fbe exporter builds a `browser/` artifact (catalog +
+   icons.webp) directly from Factorio's built-in dump flags, which delivers
+   descriptions and real research counts — things the FL mod's format never
+   could — for barely more work. Closes the sxp version-basis gap (quirk #6)
+   via the fbe fork's SE-on-2.0 pack.
+   **Slice 1 is complete:** the artifacts are published and served, the `fbe`
+   adapter sits behind the provider seam, our vanilla set is the default pack,
+   and the live e2e suite covers the plane. What remains is slice 2 (the
+   dedicated data repo, the fbe editor's transition, artifact slimming) —
+   tracked in that doc and in fbe's issues #8/#29, not here.
+2. **More ready-made FactorioLab packs** stay one manifest entry away —
+   FactorioLab remains an allowed source kind: `kr2` (Krastorio 2), `kr2sxp`,
+   `sea` (Sea Block), `pys` (Pyanodons), `bobang`, `ir3`, `nls`, vanilla
+   `1.1`, and more — see `factoriolab/factoriolab` `src/data/datasets.ts`
+   for the registry.
 
 **Machine "Can craft" list — UI alternatives (parked).** The shipped version
 reuses the paginated recipe list from the item page, so a machine that produces
@@ -639,8 +658,14 @@ vendors ~430 MB of per-pack `data.json` + `.basis` sprites and publishes them
 at `https://trisiak.github.io/factorio-blueprint-editor/data/<pack>/…` (its
 issue #8 tracks moving that data out of the repo). The long-term shape is a
 shared **data plane**: pack data generated by the fbe exporter, published from
-a dedicated data host, consumed by both apps. When that exists, this app gains
-a second data-source adapter (same provider seam, different base URL + schema)
-that serves the exact mod sets, full locales, and descriptions FactorioLab
-lacks. Design the Phase 1 provider so a data source = (base URL, schema
-adapter) and the FactorioLab specifics stay in the adapter.
+a dedicated data host, consumed by both apps — this app gains a second
+data-source adapter (same provider seam, different base URL + schema) serving
+the exact mod sets, descriptions, and (later) full locales FactorioLab lacks.
+**Its first slice has shipped — see [`docs/data-plane.md`](data-plane.md)**
+for the architecture (per-consumer artifacts on a shared host), the pipeline
+decisions (Factorio's built-in dump flags), and the two-slice rollout. Slice 1
+is live: this app now reads `browser/` artifacts served from fbe's existing
+Pages data dir for vanilla 2.0, Space Age and Space Exploration (2.0), with the
+fbe-sourced vanilla as the default pack. The dedicated data repo and the fbe
+editor's transition come later in slice 2, together with the texture-slimming /
+licensing work its issue #29 is paused on.

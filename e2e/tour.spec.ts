@@ -12,19 +12,23 @@ import path from "path";
  *
  *     npm run test:e2e:tour           # → ./screenshots/*.png (+ attached to the HTML report)
  *
- * It runs against the same production build + live FactorioLab data as app.spec.ts
- * (see playwright.config.js), so the screenshots reflect the real deployed shape.
+ * It runs against the same production build + live pack data as app.spec.ts (see
+ * playwright.config.js), so the screenshots reflect the real deployed shape.
  *
  * Pack ids are the synthetic combination ids from src/api/static/packs.ts; navigating
- * by full id boots the app and redirects to the short-id URL.
+ * by full id boots the app and redirects to the short-id URL. The tour walks the
+ * fbe-sourced packs — what the app ships by default (docs/data-plane.md) — and keeps one
+ * FactorioLab pack for the surface only that source produces (the search disambiguation
+ * of entities sharing a display name).
  */
 
 const SHORT_ID = /[0-9a-zA-Z]{22}/;
 
 const PACKS = {
-    vanilla: "fab1a000-0000-4000-8000-000000000001",
-    spaceAge: "fab1a000-0000-4000-8000-000000000002",
-    spaceExploration: "fab1a000-0000-4000-8000-000000000003",
+    vanilla: "fab1a000-0000-4000-8000-000000000011",
+    spaceAge: "fab1a000-0000-4000-8000-000000000012",
+    spaceExploration: "fab1a000-0000-4000-8000-000000000013",
+    spaceExplorationFactorioLab: "fab1a000-0000-4000-8000-000000000003",
 } as const;
 
 const SCREENSHOT_DIR = path.join(process.cwd(), "screenshots");
@@ -152,8 +156,10 @@ test.describe("visual tour — desktop", () => {
         await shot(page, testInfo, "desktop-space-exploration-items");
     });
 
-    test("space exploration: search disambiguation", async ({ page }, testInfo) => {
-        await gotoItemList(page, PACKS.spaceExploration);
+    test("space exploration (FactorioLab): search disambiguation", async ({ page }, testInfo) => {
+        // The FactorioLab-sourced sxp pack: its data has several entities sharing a display
+        // name, which the search suffixes with the raw id. Our own SE catalog has none.
+        await gotoItemList(page, PACKS.spaceExplorationFactorioLab);
         await page.fill("input", "cargo rocket");
         await expect(page.locator(".entity").first()).toBeVisible();
         await waitForIcons(page);
