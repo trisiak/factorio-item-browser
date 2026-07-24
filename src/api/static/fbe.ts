@@ -158,6 +158,7 @@ export function mapFbeCatalog(catalog: FbeCatalog, icons: FbeIcons, baseUrl: str
                 type: type,
                 label: item.label,
                 description: item.description,
+                stackSize: item.stackSize,
                 // The exporter already drops the game's hidden prototypes, so everything the
                 // catalog publishes belongs in the list, search and random picks.
                 listable: true,

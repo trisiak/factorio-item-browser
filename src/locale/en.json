@@ -71,6 +71,7 @@
         },
         "product-of": "Result of {{count}} recipe",
         "product-of_plural": "Result of {{count}} recipes",
+        "stack-size": "Stack size: {{size}}",
         "title": {
             "item": "Item: {{label}} - Factorio Item Browser",
             "fluid": "Fluid: {{label}} - Factorio Item Browser"

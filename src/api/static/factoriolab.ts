@@ -165,6 +165,7 @@ export function mapFactorioLabData(data: FactorioLabData, baseUrl: string): Pack
             // appearing in no recipe at all (calculator artifacts like steam-temperature
             // variants) stay resolvable by URL/reference, but are hidden from the item list,
             // search and random picks. See docs/static-fork.md.
+            stackSize: item.stack,
             listable:
                 !item.id.includes("-dummy-") &&
                 (machine !== undefined || ingredientIds.has(item.id) || productIds.has(item.id)),

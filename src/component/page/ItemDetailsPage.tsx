@@ -27,6 +27,7 @@ const ItemDetailsPage: FC = () => {
                 title={t(`item-details.headline.${item.type}`, { label: item.label || item.name })}
             >
                 <Detail hidden={!item.description}>{item.description}</Detail>
+                <Detail hidden={!item.stackSize}>{t("item-details.stack-size", { size: item.stackSize })}</Detail>
                 <Detail>
                     <CopyTemplate
                         label={t("copy-template.rich-text-icon.label")}

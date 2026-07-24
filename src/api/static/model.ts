@@ -32,6 +32,8 @@ export type PackItem = {
     label: string;
     /** The in-game flavor text, when the source carries one (FactorioLab has none). */
     description?: string;
+    /** Stack size; absent for fluids (and for sources that don't publish one). */
+    stackSize?: number;
     /**
      * Whether the item appears in the item list, search and random picks. Adapters decide:
      * the fbe source excludes hidden prototypes at export time, so everything it publishes
