@@ -588,7 +588,8 @@ proposed mitigations:
 
 1. **The data plane — own pack data, hosted by us.** The plan lives in
    **[`docs/data-plane.md`](data-plane.md)** (design record + tracker,
-   spanning this repo, the fbe fork's exporter, and a new data repo). It
+   spanning this repo, the fbe fork, and — in its second slice — a new
+   data repo). It
    supersedes the earlier idea of using the `factoriolab-export` mod as a
    stopgap: the fbe exporter builds a `browser/` artifact (catalog +
    icons.webp) directly from Factorio's built-in dump flags, which delivers
@@ -638,5 +639,7 @@ the exact mod sets, descriptions, and (later) full locales FactorioLab lacks.
 **This is now planned in earnest — see [`docs/data-plane.md`](data-plane.md)**
 for the architecture (per-consumer artifacts on a shared host), the pipeline
 decisions (Factorio's built-in dump flags), and the two-slice rollout
-(FIB + data repo first; the fbe editor transitions later, together with the
-texture-slimming / licensing work its issue #29 is paused on).
+(FIB first, consuming `browser/` artifacts from fbe's existing Pages data
+dir; the dedicated data repo and the fbe editor's transition come later,
+together with the texture-slimming / licensing work its issue #29 is paused
+on).
