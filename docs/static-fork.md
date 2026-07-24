@@ -407,8 +407,8 @@ should mirror this checklist and the two must stay reconciled.
 | `getItemList` | Items array minus `category: "technology"`; type = `"fluid"` when `category === "fluids"`, else `"item"`; paginate in memory. |
 | `getRecipeList` | Recipes array minus technology recipes, in data-array order (the game's category/row display grouping); paginate (Phase 6d). |
 | `getTechnologyList` | Technologies in a stable topological order over the prerequisites graph, ties broken by ascending research cost (time, then total science-pack amount, then label, then id); cycles/missing prerequisites appended deterministically; paginate (Phase 6d). |
-| `getItemIngredientRecipes` | Recipes where the item id is a key of `in`; paginate. |
-| `getItemProductRecipes` | Recipes where the item id is a key of `out`; paginate. |
+| `getItemIngredientRecipes` | Recipes where the item id is a key of `in`; paginate. Carries the item's `stack` as `ItemRecipesData.stackSize` (optional; absent for fluids and items without one), shown on the item detail head. |
+| `getItemProductRecipes` | Recipes where the item id is a key of `out`; paginate. Also carries `stackSize` (see `getItemIngredientRecipes`). |
 | `getRecipeDetails` | Recipe by id; `craftingTime = time`; `description: ""` (schema has none); no expensive mode. |
 | `getRecipeMachines` | The recipe's `producers` list joined against items with a `machine` sub-object (`craftingSpeed = machine.speed`, `numberOfModules = machine.modules`, `energyUsage = machine.usage` kW; item/fluid slot counts defaulted). |
 | `getMachineRecipes` | The inverse of `producers`: recipes naming the given machine item as a producer, as `ItemRecipesData` (same shape as the item recipe lists). Empty for non-producer items, so the machine's item page only shows a "Can craft" section when it is a crafting machine. |

@@ -45,6 +45,8 @@ export type ItemRecipesData = ResultsData<EntityData> & {
     name: string;
     label: string;
     description: string;
+    /** Items per inventory slot; absent for fluids and items the data source gives no stack size. */
+    stackSize?: number;
 };
 
 export type MachineData = {
