@@ -25,7 +25,8 @@ import {
     TechnologyListData,
 } from "../transfer";
 import { PackData, ResolvedIcon } from "./PackData";
-import { FactorioLabData } from "./factoriolab";
+import { loadFactorioLabPack } from "./factoriolab";
+import { loadFbePack } from "./fbe";
 import { defaultPack, findPackByCombinationId, PackDefinition, packs } from "./packs";
 
 /**
@@ -40,11 +41,11 @@ const KEY_LAST_PACK = "staticLastPack";
 
 type PersistedOptions = Partial<SettingOptionsData>;
 
-/** The icon cell size of FactorioLab spritesheets (66 px stride with a 2 px gutter). */
+/**
+ * The icon cell size of both sources' spritesheets (66 px stride with a 2 px gutter) — the
+ * fbe exporter deliberately mirrors FactorioLab's geometry, so one CSS generator serves both.
+ */
 const ICON_CELL_SIZE = 64;
-
-/** Abort a pack download that stalls, surfacing it as a legible ServiceNotAvailableError. */
-const FETCH_TIMEOUT_MS = 30000;
 
 type IconSheet = {
     url: string;
@@ -119,39 +120,17 @@ export class StaticPortalApi implements PortalApi {
         }
     }
 
+    /**
+     * Downloads a pack through the adapter of its source kind (each one fetches, validates
+     * and maps into the neutral pack model) and indexes the result.
+     */
     private async fetchPackData(pack: PackDefinition): Promise<PackData> {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-        let data: FactorioLabData;
-        try {
-            const response = await fetch(`${pack.source.baseUrl}/data.json`, { signal: controller.signal });
-            if (!response.ok) {
-                throw new ServiceNotAvailableError(
-                    `Failed to download the data of pack "${pack.id}": HTTP ${response.status}`,
-                );
-            }
-            data = (await response.json()) as FactorioLabData;
-        } catch (e) {
-            // Re-throw the legible HTTP error as-is; collapse network failures, aborts (the
-            // timeout) and JSON parse errors into one clear message naming the pack.
-            if (e instanceof ServiceNotAvailableError) {
-                throw e;
-            }
-            throw new ServiceNotAvailableError(`Failed to download the data of pack "${pack.id}".`);
-        } finally {
-            clearTimeout(timeout);
+        switch (pack.source.kind) {
+            case "fbe":
+                return new PackData(pack, await loadFbePack(pack));
+            case "factoriolab":
+                return new PackData(pack, await loadFactorioLabPack(pack));
         }
-
-        // Fail legibly on upstream format drift rather than deep inside PackData: the two lists
-        // this app indexes must be arrays (icons may be absent — the pack then has no icons).
-        if (!Array.isArray(data.items) || !Array.isArray(data.recipes)) {
-            throw new ServiceNotAvailableError(
-                `The data of pack "${pack.id}" is malformed: "items" and "recipes" must be arrays.`,
-            );
-        }
-
-        return new PackData(pack, data);
     }
 
     private async currentPackData(): Promise<PackData> {
@@ -336,19 +315,25 @@ export class StaticPortalApi implements PortalApi {
         return packData.getMods();
     }
 
-    private async loadIconSheet(pack: PackDefinition): Promise<IconSheet> {
+    private async loadIconSheet(pack: PackDefinition, packData: PackData): Promise<IconSheet> {
         let promise = iconSheetCache.get(pack.id);
         if (!promise) {
-            const url = `${pack.source.baseUrl}/icons.webp`;
-            // The spritesheet dimensions are not part of data.json, so measure the image
-            // itself; the browser caches it, and the CSS below references the same URL.
-            promise = new Promise<IconSheet>((resolve, reject) => {
-                const image = new Image();
-                image.onload = () => resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
-                image.onerror = () =>
-                    reject(new ServiceNotAvailableError(`Failed to load the icons of pack "${pack.id}".`));
-                image.src = url;
-            });
+            const { url, width, height } = packData.iconSheet;
+            if (width && height) {
+                // The source publishes the sheet dimensions (the fbe artifact's icons.json
+                // does), so the percentage geometry below needs no image load at all.
+                promise = Promise.resolve({ url, width, height });
+            } else {
+                // FactorioLab's data.json has no dimensions, so measure the image itself; the
+                // browser caches it, and the CSS below references the same URL.
+                promise = new Promise<IconSheet>((resolve, reject) => {
+                    const image = new Image();
+                    image.onload = () => resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
+                    image.onerror = () =>
+                        reject(new ServiceNotAvailableError(`Failed to load the icons of pack "${pack.id}".`));
+                    image.src = url;
+                });
+            }
             iconSheetCache.set(pack.id, promise);
             promise.catch(() => iconSheetCache.delete(pack.id));
         }
@@ -400,7 +385,10 @@ export class StaticPortalApi implements PortalApi {
 
     public async getIconsStyle(request: IconsStyleRequestData): Promise<IconsStyleData> {
         const pack = this.currentPack();
-        const [packData, sheet] = await Promise.all([this.loadPackData(pack), this.loadIconSheet(pack)]);
+        // The sheet resolution needs the loaded pack (its model names the sheet file and, for
+        // sources that publish them, its dimensions), so these cannot run in parallel.
+        const packData = await this.loadPackData(pack);
+        const sheet = await this.loadIconSheet(pack, packData);
 
         const processedEntities: { [type: string]: string[] } = {};
         const rules: string[] = [];

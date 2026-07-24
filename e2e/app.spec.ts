@@ -12,7 +12,11 @@ const SHORT_ID_PATTERN = "[0-9a-zA-Z]{22}";
 // Anchored to a path segment (leading slash + trailing-slash lookahead, capture group 1)
 // so extracting it from a URL can never accidentally latch onto an asset contenthash.
 const SHORT_ID = new RegExp(`/(${SHORT_ID_PATTERN})(?=/)`);
+// The FactorioLab-sourced Space Exploration pack (Factorio 1.1 basis).
 const SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000003";
+// The label of the FactorioLab-sourced Space Age pack in the settings picker; the manifest
+// also carries an fbe-sourced "Space Age (2.0)", so pack selection must not match loosely.
+const FL_SPACE_AGE_LABEL = "Space Age (2.0) (FactorioLab)";
 
 // The header search field (desktop inline box / opened mobile drawer both expose it).
 const SEARCH_INPUT = ".header-search input[type=search]";
@@ -91,14 +95,18 @@ test("settings page switches packs", async ({ page }) => {
         .locator("select")
         .first()
         .evaluate((el: HTMLSelectElement) => Array.from(el.options).map((option) => option.textContent || ""));
-    expect(packOptions.join(",")).toContain("Space Age");
+    expect(packOptions.join(",")).toContain(FL_SPACE_AGE_LABEL);
 
+    // Pin the FactorioLab-sourced entry: the manifest also lists an identically-named
+    // fbe-sourced Space Age pack, whose data this live suite deliberately does not fetch
+    // (see docs/data-plane.md — the fbe URLs only start serving after that fork's merge).
     const spaceAgeValue = await page
         .locator("select")
         .first()
         .evaluate(
-            (el: HTMLSelectElement) =>
-                Array.from(el.options).find((option) => /Space Age/.test(option.textContent || ""))?.value,
+            (el: HTMLSelectElement, label: string) =>
+                Array.from(el.options).find((option) => (option.textContent || "").includes(label))?.value,
+            FL_SPACE_AGE_LABEL,
         );
     await page.locator("select").first().selectOption(spaceAgeValue as string);
     await page.locator(".button", { hasText: "Change to" }).click();
@@ -106,11 +114,11 @@ test("settings page switches packs", async ({ page }) => {
     // Wait for the app to boot on the new pack before navigating on: the boot also
     // persists the last-pack memory that the id-less visit below relies on.
     await expect(page).toHaveURL(new RegExp(`/factorio-item-browser/${SHORT_ID_PATTERN}`));
-    await expect(page.locator("text=Setting: Space Age").first()).toBeVisible();
+    await expect(page.locator(`text=Setting: ${FL_SPACE_AGE_LABEL}`).first()).toBeVisible();
 
     // An id-less visit remembers the switched pack (localStorage last-pack fallback).
     await gotoItemList(page, "/items");
-    await expect(page.locator("text=Setting: Space Age").first()).toBeVisible();
+    await expect(page.locator(`text=Setting: ${FL_SPACE_AGE_LABEL}`).first()).toBeVisible();
 });
 
 test.describe("Space Exploration (sxp)", () => {

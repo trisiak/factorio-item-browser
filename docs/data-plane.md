@@ -168,25 +168,74 @@ existing Pages deploy publishes them, this app consumes them.
   fields. Serving URL goes live when the fbe branch merges (Pages deploys
   on master). This app's "never commit game data" constraint is unchanged —
   nothing landed here.
-- [ ] **1c — FIB: neutral model + second adapter.** Refactor `PackData` to
-  consume a small neutral internal model; the FactorioLab adapter
-  (`factoriolab.ts`) and a new `PackSource.kind: "fbe"` adapter both map into
-  it. Descriptions and research counts populate `transfer.ts` fields that
-  exist and currently carry `""` — no shape changes (the hard constraint
-  holds). Icon CSS generation already measures the sheet and emits
-  percentage-based rules; the fbe sheet reuses that path (same cell
-  geometry), including the `iconText` overlay mechanism if the catalog
-  carries overlays.
-- [ ] **1d — pack lineup.** Add fbe-sourced `vanilla-2.0` / `space-age` /
-  `space-exploration` entries under **new** synthetic combination ids (ids
-  are forever; swapping a pack's data basis under an existing id would
-  silently repoint users' scoped state and shared URLs). Relabel the FL sxp
-  entry "Space Exploration (1.1, FactorioLab)". Decide whether to delist
-  (never re-id) the FL vanilla/space-age duplicates once the fbe-sourced
-  ones prove out. Default pack switches to the fbe-sourced vanilla.
+- [x] **1c — FIB: neutral model + second adapter.** `PackData` now consumes a
+  small neutral model (`src/api/static/model.ts`: items/fluids merged into one
+  typed list, recipes, technologies, machines, an icon-rect map and the sheet
+  info) instead of FactorioLab's shape. Two adapters produce it —
+  `factoriolab.ts` (the existing mapping moved wholesale behind
+  `mapFactorioLabData` + `loadFactorioLabPack`, behavior-preserving: all 116
+  pre-existing tests pass with one mechanical call-site change) and the new
+  `fbe.ts` for `PackSource.kind: "fbe"`, which fetches `catalog.json` +
+  `icons.json` in parallel. `fetchJson.ts` holds the shared download (30 s
+  abort, every failure collapsed into a `ServiceNotAvailableError` naming the
+  pack); each adapter validates its own format (arrays present) before
+  mapping, and `StaticPortalApi` keeps the existing per-pack caching and
+  dispatches on the source kind. Source-specific mitigations stayed with their
+  source: the FactorioLab adapter still hides `-dummy-` items and recipe-less
+  calculator artifacts (via a `listable` flag on the model), and the fbe
+  adapter marks everything listable — the exporter already applies the game's
+  real hidden flags. **Icons:** the fbe sheet needs no `Image` measuring step
+  (`icons.json` publishes `sheet.width/height` and the file name), and emits
+  the same percentage geometry as before; FactorioLab keeps the measuring
+  path. Recipes without an own `iconId` fall back to their first result's icon.
+  **Descriptions** now populate `ItemRecipesData.description` (rendered on the
+  item page) and `RecipeDetailsData.description` (recipe page) — both existed
+  and carried `""`. **Additive `transfer.ts` fields** (the documented
+  additive-only precedent; nothing existing changed): `TechnologyData.description`,
+  `.researchCount` and `.researchCountFormula`. All three render: the
+  technology page gained a description `Detail`, and `TechnologyResearch`
+  shows a "× N" units row above the research time (locale keys
+  `technology-details.research-count`, en + de), falling back to the level
+  formula for infinite technologies. Verified against the real artifacts of
+  all three packs (read-only): every item/fluid and technology icon resolves,
+  research counts and descriptions map through, machine stats and the
+  technology ordering look right. One artifact-side nit worth an exporter
+  follow-up: a recipe whose only result is a *hidden* item (`rocket-part`,
+  plus SE's `se-space-probe-rocket-deploy`) has no own `iconId` and no icon to
+  fall back to, so it renders icon-less — 1–2 recipes per pack.
+- [x] **1d — pack lineup.** Three fbe-sourced entries added, with **new**
+  combination ids (ids are forever; swapping a pack's data basis under an
+  existing id would silently repoint users' scoped state and shared URLs) and
+  distinct pack ids, because the plain ones are taken by the FactorioLab
+  entries and pack ids key the caches and localStorage:
+
+  | pack id | label | combination id | source |
+  |---|---|---|---|
+  | `vanilla-2.0-fbe` | Vanilla 2.0 | `fab1a000-0000-4000-8000-000000000011` | `…/data/vanilla-2.0/browser` |
+  | `space-age-fbe` | Space Age (2.0) | `fab1a000-0000-4000-8000-000000000012` | `…/data/space-age/browser` |
+  | `space-exploration-fbe` | Space Exploration (2.0) | `fab1a000-0000-4000-8000-000000000013` | `…/data/space-exploration/browser` |
+
+  The FactorioLab entries keep their ids and gained a "(FactorioLab)" label
+  suffix (labels are safe to change, ids are not): "Vanilla 2.0
+  (FactorioLab)", "Space Age (2.0) (FactorioLab)", "Space Exploration (1.1,
+  FactorioLab)". **Deferred on purpose:** the default pack stays the
+  FactorioLab vanilla and the e2e suite still exercises only FactorioLab
+  packs — the fbe URLs 404 until the fbe branch merges and its Pages deploy
+  runs, and a default pointing at a 404 would break every id-less visit. The
+  follow-up, once serving is live: flip `defaultPack` to `vanilla-2.0-fbe`,
+  add e2e coverage of an fbe pack (the live suite then doubles as a canary for
+  *our* data plane), and decide whether to delist (never re-id) the FactorioLab
+  vanilla/space-age duplicates. `e2e/app.spec.ts` already had its pack-picker
+  selection pinned to the FactorioLab label, so the longer lineup cannot make
+  it pick a not-yet-serving pack.
 - [ ] **1e — verification + docs.** Unit tests for the new adapter mapping
-  (synthetic fixture, like the FL one); e2e picks up the new packs (the live
-  suite then doubles as a canary for *our* data plane, not just FL's);
+  landed with 1c (`src/api/static/fbe.test.ts`, 13 tests on a tiny synthetic
+  catalog + icons fixture — items/fluids merge and shared-id precedence,
+  ordering, recipe icon fallback, descriptions, research counts/formulas and
+  trigger technologies, machine mapping, sheet-dimension icon CSS with the
+  `Image` constructor booby-trapped, and both malformed-format errors; no
+  game-derived data, per CLAUDE.md). Still open: e2e coverage of the fbe packs
+  and the default-pack flip (both blocked on the fbe merge, see 1d);
   update `static-fork.md`'s roadmap + Bigger picture, add a pointer to this
   plan in fbe's docs/CLAUDE.md (they don't mention this fork yet), and note
   progress on fbe issue #8 (it closes in slice 2).
@@ -228,8 +277,10 @@ a corner:
 - **Data repo name** — `factorio-pack-data`? (Working name; decide when
   slice 2 creates it.)
 - **Delist or keep** the FL-sourced vanilla/space-age duplicates after 1d.
-- **`icons.json` vs. rects embedded in `catalog.json`** — decide when the
-  icon-sprite dump layout is in front of us; embedded saves a fetch, separate
-  keeps the catalog cacheable across icon-only regens. Minor either way.
+- ~~**`icons.json` vs. rects embedded in `catalog.json`**~~ — **settled in
+  1a/1c: separate.** It keeps the catalog cacheable across icon-only regens
+  and lets the sheet name its own file and publish its dimensions, which is
+  what removes the adapter's image-measuring step. The extra fetch runs in
+  parallel with the catalog.
 - **Catalog compression** — Pages serves gzip; if SE's catalog lands big,
   consider precompressed `.json.gz` or trimming, measured not guessed.

@@ -19,117 +19,97 @@ import {
     TechnologyListData,
     TechnologyMetaData,
 } from "../transfer";
-import {
-    FactorioLabData,
-    FactorioLabIcon,
-    FactorioLabItem,
-    FactorioLabRational,
-    FactorioLabRecipe,
-    toNumber,
-} from "./factoriolab";
+import { PackIcon, PackIconSheet, PackItem, PackModel, PackRecipe, PackRecipeItem, PackTechnology } from "./model";
 import { PackDefinition } from "./packs";
 
 export type ResolvedIcon = {
-    icon: FactorioLabIcon;
-    /** Overlay text FactorioLab renders on top of a shared icon (e.g. steam temperatures). */
+    icon: PackIcon;
+    /** Overlay text rendered on top of a shared icon (e.g. FactorioLab's steam temperatures). */
     text?: string;
 };
 
 /**
- * A loaded pack: FactorioLab data indexed and mapped into the transfer.ts shapes the
- * stores expect. All answers are computed in memory — the dataset of even the largest
- * packs is a few MB of JSON.
+ * A loaded pack: the neutral pack model (model.ts, produced by one of the source adapters)
+ * indexed and mapped into the transfer.ts shapes the stores expect. All answers are computed
+ * in memory — the dataset of even the largest packs is a few MB of JSON.
  *
- * Technologies are kept out of the browsable item and recipe lists — FactorioLab models
+ * Technologies are kept out of the browsable item and recipe lists: FactorioLab models
  * research as pseudo-items and science-pack recipes, which would pollute an item browser's
- * grid, search and random picks. They are still indexed separately so the app can answer
- * "what unlocks this item" and (in future) browse the technology tree; see
- * getItemResearch/getTechnology and docs/static-fork.md.
+ * grid, search and random picks, and the fbe artifact keeps them in their own array anyway.
+ * They are still indexed separately so the app can answer "what unlocks this item" and browse
+ * the technology tree; see getItemResearch/getTechnology and docs/static-fork.md.
  */
 export class PackData {
     public readonly definition: PackDefinition;
-    private readonly data: FactorioLabData;
+    private readonly model: PackModel;
 
-    private readonly items: FactorioLabItem[];
-    private readonly itemsById = new Map<string, FactorioLabItem>();
-    private readonly recipes: FactorioLabRecipe[];
-    private readonly recipesById = new Map<string, FactorioLabRecipe>();
+    private readonly items: PackItem[];
+    private readonly itemsById = new Map<string, PackItem>();
+    private readonly recipes: PackRecipe[];
+    private readonly recipesById = new Map<string, PackRecipe>();
     private readonly recipeIdsByIngredient = new Map<string, string[]>();
     private readonly recipeIdsByProduct = new Map<string, string[]>();
     private readonly recipeIdsByProducer = new Map<string, string[]>();
-    private readonly iconsById = new Map<string, FactorioLabIcon>();
-    private readonly listableItems: FactorioLabItem[];
+    private readonly iconsById: Map<string, PackIcon>;
+    private readonly listableItems: PackItem[];
     // The item-list meta array is the same on every call; build it once, lazily.
     private listableItemMetasCache?: ItemMetaData[];
     // The recipe- and technology-list meta arrays, likewise built once, lazily.
     private recipeMetasCache?: RecipeMetaData[];
     private technologyMetasCache?: TechnologyMetaData[];
 
-    // Technology data, indexed but never added to the browsable lists above. A technology is
-    // an item (category "technology", carrying the technology sub-object) paired with a
-    // same-id recipe holding its science-pack cost (in) and research time.
-    private readonly technologiesById = new Map<string, FactorioLabItem>();
-    private readonly technologyRecipesById = new Map<string, FactorioLabRecipe>();
+    // Technology data, indexed but never added to the browsable lists above.
+    private readonly technologiesById = new Map<string, PackTechnology>();
     private readonly technologyIdsByUnlockedRecipe = new Map<string, string[]>();
     // Reverse of each technology's `prerequisites`: prerequisite tech id → the technologies
     // that list it, i.e. the technologies this one unlocks (partial — only direct dependents).
     private readonly technologyIdsByPrerequisite = new Map<string, string[]>();
 
-    public constructor(definition: PackDefinition, data: FactorioLabData) {
+    public constructor(definition: PackDefinition, model: PackModel) {
         this.definition = definition;
-        this.data = data;
+        this.model = model;
 
-        this.items = data.items.filter((item) => !this.isTechnologyItem(item));
+        this.items = model.items;
         for (const item of this.items) {
             this.itemsById.set(item.id, item);
         }
 
-        this.recipes = data.recipes.filter((recipe) => !this.isTechnologyRecipe(recipe));
+        this.recipes = model.recipes;
         for (const recipe of this.recipes) {
             this.recipesById.set(recipe.id, recipe);
-            for (const itemId of Object.keys(recipe.in || {})) {
-                this.push(this.recipeIdsByIngredient, itemId, recipe.id);
+            for (const { id } of recipe.ingredients) {
+                this.push(this.recipeIdsByIngredient, id, recipe.id);
             }
-            for (const itemId of Object.keys(recipe.out || {})) {
-                this.push(this.recipeIdsByProduct, itemId, recipe.id);
+            for (const { id } of recipe.products) {
+                this.push(this.recipeIdsByProduct, id, recipe.id);
             }
-            for (const producerId of recipe.producers || []) {
+            for (const producerId of recipe.producers) {
                 this.push(this.recipeIdsByProducer, producerId, recipe.id);
             }
         }
 
-        for (const item of data.items) {
-            if (this.isTechnologyItem(item)) {
-                this.technologiesById.set(item.id, item);
-                for (const recipeId of item.technology?.recipeUnlock || []) {
-                    this.push(this.technologyIdsByUnlockedRecipe, recipeId, item.id);
-                }
-                for (const prerequisiteId of item.technology?.prerequisites || []) {
-                    this.push(this.technologyIdsByPrerequisite, prerequisiteId, item.id);
-                }
+        for (const technology of model.technologies) {
+            this.technologiesById.set(technology.id, technology);
+            for (const recipeId of technology.unlockedRecipes) {
+                this.push(this.technologyIdsByUnlockedRecipe, recipeId, technology.id);
             }
-        }
-        for (const recipe of data.recipes) {
-            if (this.isTechnologyRecipe(recipe)) {
-                this.technologyRecipesById.set(recipe.id, recipe);
+            for (const prerequisiteId of technology.prerequisites) {
+                this.push(this.technologyIdsByPrerequisite, prerequisiteId, technology.id);
             }
         }
 
-        for (const icon of data.icons || []) {
-            this.iconsById.set(icon.id, icon);
-        }
+        this.iconsById = model.icons;
 
-        // The browsable subset: mod-internal dummy items (e.g. SE's cargo-rocket pseudo
-        // ingredients) and items appearing in no recipe at all (calculator artifacts like
-        // steam-temperature variants) stay resolvable by URL/reference, but are hidden
-        // from the item list, search and random picks. See docs/static-fork.md.
-        this.listableItems = this.items.filter(
-            (item) =>
-                !item.id.includes("-dummy-") &&
-                (item.machine !== undefined ||
-                    this.recipeIdsByIngredient.has(item.id) ||
-                    this.recipeIdsByProduct.has(item.id)),
-        );
+        // The browsable subset. Which items are listable is the adapter's call: the fbe
+        // source publishes only non-hidden prototypes, while the FactorioLab adapter hides
+        // its mod-internal dummies and recipe-less calculator artifacts (they stay
+        // resolvable by URL and as recipe ingredients). See docs/static-fork.md.
+        this.listableItems = this.items.filter((item) => item.listable);
+    }
+
+    /** The pack's spritesheet, with its dimensions when the source publishes them. */
+    public get iconSheet(): PackIconSheet {
+        return this.model.iconSheet;
     }
 
     private push(map: Map<string, string[]>, key: string, value: string): void {
@@ -141,22 +121,10 @@ export class PackData {
         }
     }
 
-    private isTechnologyItem(item: FactorioLabItem): boolean {
-        return item.category === "technology" || item.technology !== undefined;
-    }
-
-    private isTechnologyRecipe(recipe: FactorioLabRecipe): boolean {
-        return recipe.category === "technology" || (recipe.flags || []).includes("technology");
-    }
-
-    private typeOfItem(item: FactorioLabItem): string {
-        return item.category === "fluids" ? "fluid" : "item";
-    }
-
     private resolveItemRef(itemId: string): { type: string; name: string; label: string } {
         const item = this.itemsById.get(itemId);
         if (item) {
-            return { type: this.typeOfItem(item), name: item.id, label: item.name };
+            return { type: item.type, name: item.id, label: item.label };
         }
         return { type: "item", name: itemId, label: itemId };
     }
@@ -168,27 +136,27 @@ export class PackData {
         };
     }
 
-    private buildRecipeItems(side: { [itemId: string]: FactorioLabRational } | undefined): RecipeItemData[] {
-        return Object.entries(side || {}).map(([itemId, amount]) => ({
-            ...this.resolveItemRef(itemId),
-            amount: toNumber(amount, 1),
+    private buildRecipeItems(side: PackRecipeItem[]): RecipeItemData[] {
+        return side.map((entry) => ({
+            ...this.resolveItemRef(entry.id),
+            amount: entry.amount,
         }));
     }
 
-    private buildRecipeData(recipe: FactorioLabRecipe): RecipeData {
+    private buildRecipeData(recipe: PackRecipe): RecipeData {
         return {
-            craftingTime: toNumber(recipe.time),
-            ingredients: this.buildRecipeItems(recipe.in),
-            products: this.buildRecipeItems(recipe.out),
+            craftingTime: recipe.craftingTime,
+            ingredients: this.buildRecipeItems(recipe.ingredients),
+            products: this.buildRecipeItems(recipe.products),
             isExpensive: false,
         };
     }
 
-    private buildRecipeEntity(recipe: FactorioLabRecipe): EntityData {
+    private buildRecipeEntity(recipe: PackRecipe): EntityData {
         return {
             type: "recipe",
             name: recipe.id,
-            label: recipe.name,
+            label: recipe.label,
             recipes: [this.buildRecipeData(recipe)],
             numberOfRecipes: 1,
         };
@@ -198,24 +166,24 @@ export class PackData {
      * Builds the entity representation of an item: the item plus a sample of the recipes
      * producing it, as used by tooltips, search results and the random cards.
      */
-    private buildItemEntity(item: FactorioLabItem): EntityData {
+    private buildItemEntity(item: PackItem): EntityData {
         const recipeIds = this.recipeIdsByProduct.get(item.id) || [];
         const recipes = recipeIds
             .slice(0, Config.numberOfRecipesPerEntity)
-            .map((recipeId) => this.buildRecipeData(this.recipesById.get(recipeId) as FactorioLabRecipe));
+            .map((recipeId) => this.buildRecipeData(this.recipesById.get(recipeId) as PackRecipe));
 
         return {
-            type: this.typeOfItem(item),
+            type: item.type,
             name: item.id,
-            label: item.name,
+            label: item.label,
             recipes: recipes,
             numberOfRecipes: recipeIds.length,
         };
     }
 
-    public getItem(type: string, name: string): FactorioLabItem | null {
+    public getItem(type: string, name: string): PackItem | null {
         const item = this.itemsById.get(name);
-        if (!item || this.typeOfItem(item) !== type) {
+        if (!item || item.type !== type) {
             return null;
         }
         return item;
@@ -224,7 +192,7 @@ export class PackData {
     private listableItemMetas(): ItemMetaData[] {
         if (!this.listableItemMetasCache) {
             this.listableItemMetasCache = this.listableItems.map((item) => ({
-                type: this.typeOfItem(item),
+                type: item.type,
                 name: item.id,
             }));
         }
@@ -237,12 +205,12 @@ export class PackData {
 
     private recipeMetas(): RecipeMetaData[] {
         if (!this.recipeMetasCache) {
-            // Data-array order (the technology recipes are already filtered out of
-            // `this.recipes`): FactorioLab's order follows the game's category/row
-            // display grouping, the same rationale as the item list — do not re-sort.
+            // Model order (research recipes are never part of it): both sources publish the
+            // game's category/row display grouping, the same rationale as the item list — do
+            // not re-sort.
             this.recipeMetasCache = this.recipes.map((recipe) => ({
                 name: recipe.id,
-                label: recipe.name,
+                label: recipe.label,
             }));
         }
         return this.recipeMetasCache;
@@ -256,7 +224,7 @@ export class PackData {
         if (!this.technologyMetasCache) {
             this.technologyMetasCache = this.orderedTechnologies().map((technology) => ({
                 name: technology.id,
-                label: technology.name,
+                label: technology.label,
             }));
         }
         return this.technologyMetasCache;
@@ -271,29 +239,32 @@ export class PackData {
      * graph (an edge points prerequisite → technology), so a technology never appears before
      * any of its prerequisites. Kahn's algorithm drives it; among the technologies that are
      * currently available (all their known prerequisites already emitted) the next one is the
-     * cheapest, where research cost is defined pragmatically from the technology's paired
-     * same-id research recipe as the tuple:
-     *   1. research time (`recipe.time`; 0 for trigger/free technologies with no paired recipe),
-     *   2. then the total science-pack amount (the sum of the recipe's `in` values),
+     * cheapest, where research cost is defined pragmatically as the tuple:
+     *   1. total research time (time per unit × unit count; 0 for trigger/free technologies),
+     *   2. then the total science-pack amount (likewise multiplied by the unit count),
      *   3. then the label (locale compare),
      *   4. then the id — a final, fully deterministic tiebreak.
+     * Sources without a unit count (FactorioLab) fall back to a count of 1, which reduces the
+     * tuple to plain per-unit time and amount.
      * A prerequisite that references an unknown technology is ignored for availability (so a
      * dangling reference cannot strand a technology forever); any technologies still unemitted
      * after the sort — a prerequisite cycle — are appended in that same ascending-cost order.
      * The list is therefore always complete and the routine never drops a node or throws.
      */
-    private orderedTechnologies(): FactorioLabItem[] {
+    private orderedTechnologies(): PackTechnology[] {
         const technologies = [...this.technologiesById.values()];
 
-        // Research-cost tuple per technology, taken from its paired research recipe.
+        // Research-cost tuple per technology.
         const costs = new Map<string, [number, number, string, string]>();
         for (const technology of technologies) {
-            const recipe = this.technologyRecipesById.get(technology.id);
-            const time = recipe ? toNumber(recipe.time) : 0;
-            const amount = recipe
-                ? Object.values(recipe.in || {}).reduce<number>((sum, value) => sum + toNumber(value), 0)
-                : 0;
-            costs.set(technology.id, [time, amount, technology.name, technology.id]);
+            const count = technology.researchCount ?? 1;
+            const amount = technology.ingredients.reduce<number>((sum, ingredient) => sum + ingredient.amount, 0);
+            costs.set(technology.id, [
+                technology.researchTime * count,
+                amount * count,
+                technology.label,
+                technology.id,
+            ]);
         }
         const compareCost = (a: string, b: string): number => {
             const [timeA, amountA, labelA, idA] = costs.get(a) as [number, number, string, string];
@@ -314,13 +285,13 @@ export class PackData {
         // In-degree = number of prerequisites that resolve to a known technology.
         const inDegree = new Map<string, number>();
         for (const technology of technologies) {
-            const known = (technology.technology?.prerequisites || []).filter((id) => this.technologiesById.has(id));
+            const known = technology.prerequisites.filter((id) => this.technologiesById.has(id));
             inDegree.set(technology.id, known.length);
         }
 
         const available = technologies.map((technology) => technology.id).filter((id) => inDegree.get(id) === 0);
 
-        const ordered: FactorioLabItem[] = [];
+        const ordered: PackTechnology[] = [];
         const emitted = new Set<string>();
         while (available.length > 0) {
             // Pick the cheapest currently-available technology (linear scan; the node counts
@@ -333,7 +304,7 @@ export class PackData {
             }
             const [technologyId] = available.splice(minIndex, 1);
             emitted.add(technologyId);
-            ordered.push(this.technologiesById.get(technologyId) as FactorioLabItem);
+            ordered.push(this.technologiesById.get(technologyId) as PackTechnology);
 
             for (const dependentId of this.technologyIdsByPrerequisite.get(technologyId) || []) {
                 const degree = inDegree.get(dependentId);
@@ -359,11 +330,7 @@ export class PackData {
         return ordered;
     }
 
-    public getItemRecipes(
-        item: FactorioLabItem,
-        side: "ingredient" | "product" | "producer",
-        page: number,
-    ): ItemRecipesData {
+    public getItemRecipes(item: PackItem, side: "ingredient" | "product" | "producer", page: number): ItemRecipesData {
         const map =
             side === "ingredient"
                 ? this.recipeIdsByIngredient
@@ -376,13 +343,13 @@ export class PackData {
         const pageSize = Config.numberOfItemRecipesPerPage;
         const entities = recipeIds
             .slice((page - 1) * pageSize, page * pageSize)
-            .map((recipeId) => this.buildRecipeEntity(this.recipesById.get(recipeId) as FactorioLabRecipe));
+            .map((recipeId) => this.buildRecipeEntity(this.recipesById.get(recipeId) as PackRecipe));
 
         return {
-            type: this.typeOfItem(item),
+            type: item.type,
             name: item.id,
-            label: item.name,
-            description: "",
+            label: item.label,
+            description: item.description ?? "",
             results: entities,
             numberOfResults: recipeIds.length,
         };
@@ -395,8 +362,8 @@ export class PackData {
         }
         return {
             name: recipe.id,
-            label: recipe.name,
-            description: "",
+            label: recipe.label,
+            description: recipe.description ?? "",
             recipe: this.buildRecipeData(recipe),
         };
     }
@@ -408,7 +375,7 @@ export class PackData {
         }
 
         const machines: MachineData[] = [];
-        for (const producerId of recipe.producers || []) {
+        for (const producerId of recipe.producers) {
             const producer = this.itemsById.get(producerId);
             if (!producer || !producer.machine) {
                 continue;
@@ -418,11 +385,11 @@ export class PackData {
         return this.paginate(machines, page, Config.numberOfMachinesPerPage);
     }
 
-    private buildMachineData(producer: FactorioLabItem): MachineData {
-        const machine = producer.machine || {};
+    private buildMachineData(producer: PackItem): MachineData {
+        const machine = producer.machine;
 
-        // FactorioLab reports energy usage as a plain kW number; scale to the tidiest unit.
-        let energyUsage = toNumber(machine.usage);
+        // Both sources report energy usage as a plain kW number; scale to the tidiest unit.
+        let energyUsage = machine?.energyUsageKw ?? 0;
         let energyUsageUnit = "kW";
         if (energyUsage >= 1000000) {
             energyUsage = energyUsage / 1000000;
@@ -434,12 +401,12 @@ export class PackData {
 
         return {
             name: producer.id,
-            label: producer.name,
-            craftingSpeed: toNumber(machine.speed, 1),
-            // FactorioLab has no slot data; 255 renders as "unlimited" in formatMachineSlots.
+            label: producer.label,
+            craftingSpeed: machine?.craftingSpeed ?? 1,
+            // Neither source has slot data; 255 renders as "unlimited" in formatMachineSlots.
             numberOfItems: 255,
             numberOfFluids: 255,
-            numberOfModules: machine.modules ?? 0,
+            numberOfModules: machine?.numberOfModules ?? 0,
             energyUsage: energyUsage,
             energyUsageUnit: energyUsageUnit,
         };
@@ -447,35 +414,26 @@ export class PackData {
 
     private technologyRef(technologyId: string): TechnologyMetaData {
         const technology = this.technologiesById.get(technologyId);
-        return { name: technologyId, label: technology ? technology.name : technologyId };
+        return { name: technologyId, label: technology ? technology.label : technologyId };
     }
 
     /**
-     * Maps a technology item into its full detail: research packs and time (from the paired
-     * same-id technology recipe), prerequisite technologies (for tree traversal), the recipes
-     * it unlocks and the technologies it directly leads to (the reverse of prerequisites).
-     * Trigger/free technologies have no paired recipe — their research cost is empty and their
-     * time zero.
+     * Maps a technology into its full detail: research packs, time and (where the source has
+     * them) the real research-unit count, prerequisite technologies (for tree traversal), the
+     * recipes it unlocks and the technologies it directly leads to (the reverse of
+     * prerequisites). Trigger/free technologies carry no research cost — their ingredient
+     * list is empty and their time zero.
      */
-    private buildTechnologyData(technology: FactorioLabItem): TechnologyData {
-        const info = technology.technology || {};
-        const recipe = this.technologyRecipesById.get(technology.id);
-        const unlockedRecipes = (info.recipeUnlock || [])
+    private buildTechnologyData(technology: PackTechnology): TechnologyData {
+        const unlockedRecipes = technology.unlockedRecipes
             .map((recipeId) => this.recipesById.get(recipeId))
-            .filter((unlocked): unlocked is FactorioLabRecipe => unlocked !== undefined)
+            .filter((unlocked): unlocked is PackRecipe => unlocked !== undefined)
             .map((unlocked) => this.buildRecipeEntity(unlocked));
 
         return {
-            name: technology.id,
-            label: technology.name,
-            researchTime: recipe ? toNumber(recipe.time) : 0,
-            ingredients: recipe ? this.buildRecipeItems(recipe.in) : [],
-            prerequisites: (info.prerequisites || []).map((id) => this.technologyRef(id)),
+            ...this.buildTechnologyBase(technology),
             unlockedRecipes: unlockedRecipes,
             numberOfUnlockedRecipes: unlockedRecipes.length,
-            unlockedTechnologies: (this.technologyIdsByPrerequisite.get(technology.id) || []).map((id) =>
-                this.technologyRef(id),
-            ),
         };
     }
 
@@ -484,25 +442,32 @@ export class PackData {
      * (getItemResearch / getRecipeResearch), whose consumers render only a technology's
      * name/label plus its research cost — never the recipes it unlocks. It leaves
      * `unlockedRecipes` empty and reports `numberOfUnlockedRecipes` as the cheap count of
-     * resolvable recipeUnlock entries, which equals what buildTechnologyData would report
-     * (that method drops unresolvable ids the same way). The TechnologyData shape is
-     * identical; only the expensive recipe-entity materialization is skipped.
+     * resolvable unlock entries, which equals what buildTechnologyData would report (that
+     * method drops unresolvable ids the same way). The TechnologyData shape is identical;
+     * only the expensive recipe-entity materialization is skipped.
      */
-    private buildTechnologyResearch(technology: FactorioLabItem): TechnologyData {
-        const info = technology.technology || {};
-        const recipe = this.technologyRecipesById.get(technology.id);
-        const numberOfUnlockedRecipes = (info.recipeUnlock || []).filter((recipeId) =>
-            this.recipesById.has(recipeId),
-        ).length;
+    private buildTechnologyResearch(technology: PackTechnology): TechnologyData {
+        return {
+            ...this.buildTechnologyBase(technology),
+            unlockedRecipes: [],
+            numberOfUnlockedRecipes: technology.unlockedRecipes.filter((recipeId) => this.recipesById.has(recipeId))
+                .length,
+        };
+    }
 
+    /** The parts both technology builders share. */
+    private buildTechnologyBase(
+        technology: PackTechnology,
+    ): Omit<TechnologyData, "unlockedRecipes" | "numberOfUnlockedRecipes"> {
         return {
             name: technology.id,
-            label: technology.name,
-            researchTime: recipe ? toNumber(recipe.time) : 0,
-            ingredients: recipe ? this.buildRecipeItems(recipe.in) : [],
-            prerequisites: (info.prerequisites || []).map((id) => this.technologyRef(id)),
-            unlockedRecipes: [],
-            numberOfUnlockedRecipes: numberOfUnlockedRecipes,
+            label: technology.label,
+            description: technology.description,
+            researchTime: technology.researchTime,
+            researchCount: technology.researchCount,
+            researchCountFormula: technology.researchCountFormula,
+            ingredients: this.buildRecipeItems(technology.ingredients),
+            prerequisites: technology.prerequisites.map((id) => this.technologyRef(id)),
             unlockedTechnologies: (this.technologyIdsByPrerequisite.get(technology.id) || []).map((id) =>
                 this.technologyRef(id),
             ),
@@ -515,14 +480,14 @@ export class PackData {
     }
 
     /**
-     * The technologies that unlock a given recipe (the reverse of each technology's
-     * `recipeUnlock`). This is the core research connection of a recipe; empty for recipes
-     * available from the start.
+     * The technologies that unlock a given recipe (the reverse of each technology's unlock
+     * list). This is the core research connection of a recipe; empty for recipes available
+     * from the start.
      */
     public getRecipeResearch(recipeName: string): TechnologyData[] {
         return (this.technologyIdsByUnlockedRecipe.get(recipeName) || [])
             .map((id) => this.technologiesById.get(id))
-            .filter((technology): technology is FactorioLabItem => technology !== undefined)
+            .filter((technology): technology is PackTechnology => technology !== undefined)
             .map((technology) => this.buildTechnologyResearch(technology));
     }
 
@@ -532,7 +497,7 @@ export class PackData {
      * unlocked by more than one technology (several producing recipes, or a recipe granted by
      * multiple technologies), so the result is a de-duplicated set.
      */
-    public getItemResearch(item: FactorioLabItem): ItemResearchData {
+    public getItemResearch(item: PackItem): ItemResearchData {
         const technologyIds = new Set<string>();
         for (const recipeId of this.recipeIdsByProduct.get(item.id) || []) {
             for (const technologyId of this.technologyIdsByUnlockedRecipe.get(recipeId) || []) {
@@ -542,13 +507,13 @@ export class PackData {
 
         const technologies = [...technologyIds]
             .map((id) => this.technologiesById.get(id))
-            .filter((technology): technology is FactorioLabItem => technology !== undefined)
+            .filter((technology): technology is PackTechnology => technology !== undefined)
             .map((technology) => this.buildTechnologyResearch(technology));
 
         return {
-            type: this.typeOfItem(item),
+            type: item.type,
             name: item.id,
-            label: item.name,
+            label: item.label,
             technologies: technologies,
         };
     }
@@ -593,17 +558,17 @@ export class PackData {
 
     public search(query: string, page: number): SearchResultsData {
         const needle = query.trim().toLowerCase();
-        const scored: { item: FactorioLabItem; score: number }[] = [];
+        const scored: { item: PackItem; score: number }[] = [];
         if (needle !== "") {
             for (const item of this.listableItems) {
-                const label = item.name.toLowerCase();
+                const label = item.label.toLowerCase();
                 if (label.startsWith(needle) || item.id.startsWith(needle)) {
                     scored.push({ item, score: 0 });
                 } else if (label.includes(needle) || item.id.includes(needle)) {
                     scored.push({ item, score: 1 });
                 }
             }
-            scored.sort((left, right) => left.score - right.score || left.item.name.localeCompare(right.item.name));
+            scored.sort((left, right) => left.score - right.score || left.item.label.localeCompare(right.item.label));
         }
 
         // Distinct entities can share a display name (e.g. SE's grounded/spaced variants);
@@ -611,7 +576,7 @@ export class PackData {
         // must consider ALL matches (cheap), even though only one page of entities is built.
         const labelCounts = new Map<string, number>();
         for (const { item } of scored) {
-            labelCounts.set(item.name, (labelCounts.get(item.name) || 0) + 1);
+            labelCounts.set(item.label, (labelCounts.get(item.label) || 0) + 1);
         }
 
         // Slice to the requested page before building entities — each entity expands several
@@ -619,8 +584,8 @@ export class PackData {
         const pageSize = Config.numberOfSearchResultsPerPage;
         const entities = scored.slice((page - 1) * pageSize, page * pageSize).map(({ item }) => {
             const entity = this.buildItemEntity(item);
-            if ((labelCounts.get(item.name) || 0) > 1) {
-                entity.label = `${item.name} (${item.id})`;
+            if ((labelCounts.get(item.label) || 0) > 1) {
+                entity.label = `${item.label} (${item.id})`;
             }
             return entity;
         });
@@ -634,15 +599,14 @@ export class PackData {
     /**
      * Resolves the spritesheet position of an entity's icon (plus its overlay text, e.g.
      * steam temperatures), or null if the entity (or its icon) is unknown. Items, fluids
-     * and machines share the item namespace; recipes may point at another icon via their
-     * icon field (as items may, too). Technologies live in their own namespace and carry
-     * their own icon field.
+     * and machines share the item namespace; a recipe without an own icon falls back to its
+     * first product's icon (the fbe artifact omits the icon id in exactly that case).
      */
     public getIconRect(type: string, name: string): ResolvedIcon | null {
         if (type === "technology") {
             const technology = this.technologiesById.get(name);
             if (technology) {
-                const icon = this.iconsById.get(technology.icon ?? technology.id);
+                const icon = technology.iconId ? this.iconsById.get(technology.iconId) : undefined;
                 if (icon) {
                     return { icon, text: technology.iconText };
                 }
@@ -653,33 +617,33 @@ export class PackData {
         if (type === "recipe") {
             const recipe = this.recipesById.get(name);
             if (recipe) {
-                const icon = this.iconsById.get(recipe.icon ?? recipe.id);
+                const icon = recipe.iconId ? this.iconsById.get(recipe.iconId) : undefined;
                 if (icon) {
                     return { icon, text: recipe.iconText };
                 }
                 // No own icon entry: fall back to the recipe's primary product.
-                const primaryProduct = Object.keys(recipe.out || {})[0];
+                const primaryProduct = recipe.products[0];
                 if (primaryProduct) {
-                    return this.getIconRect("item", primaryProduct);
+                    return this.getIconRect("item", primaryProduct.id);
                 }
             }
             // Fall through: some recipe names only exist as items in the icon set.
         }
 
         const item = this.itemsById.get(name);
-        if (!item) {
+        if (!item || !item.iconId) {
             return null;
         }
-        const icon = this.iconsById.get(item.icon ?? item.id);
+        const icon = this.iconsById.get(item.iconId);
         return icon ? { icon, text: item.iconText } : null;
     }
 
     public getMods(): ModData[] {
-        return Object.entries(this.data.version || {}).map(([name, version]) => ({
-            name: name,
-            label: name,
+        return this.model.mods.map((mod) => ({
+            name: mod.name,
+            label: mod.name,
             author: "",
-            version: version,
+            version: mod.version,
         }));
     }
 }

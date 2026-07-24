@@ -106,8 +106,21 @@ export type RecipeListData = ResultsData<RecipeMetaData>;
 export type TechnologyData = {
     name: string;
     label: string;
-    /** Research time per unit, in seconds. The data source carries no research-unit count. */
+    /**
+     * The technology's in-game description. Optional: only data sources that carry
+     * descriptions populate it (the fbe browser artifact does, FactorioLab does not).
+     */
+    description?: string;
+    /** Research time per unit, in seconds. */
     researchTime: number;
+    /**
+     * The number of research units. Optional: only data sources with real research counts
+     * populate it (the fbe browser artifact does; FactorioLab models research as a recipe
+     * and drops the count).
+     */
+    researchCount?: number;
+    /** The level formula of infinite/multi-level technologies (e.g. "2^L*1000"), if any. */
+    researchCountFormula?: string;
     /** The science packs the research consumes; empty for trigger/free technologies. */
     ingredients: RecipeItemData[];
     prerequisites: TechnologyMetaData[];

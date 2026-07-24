@@ -164,6 +164,7 @@
         "leads-to_plural": "Leads to {{count}} technologies",
         "prerequisites": "Requires researching",
         "research": "Research cost",
+        "research-count": "Research units",
         "title": "Technology: {{label}} - Factorio Item Browser",
         "unlocks": "Unlocks {{count}} recipe",
         "unlocks_plural": "Unlocks {{count}} recipes"
