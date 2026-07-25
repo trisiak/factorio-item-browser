@@ -38,7 +38,7 @@ export type PackDefinition = {
 };
 
 const FACTORIOLAB_DATA_ROOT = "https://factoriolab.github.io/data";
-const FBE_DATA_ROOT = "https://trisiak.github.io/factorio-blueprint-editor/data";
+const FBE_DATA_ROOT = "https://trisiak.github.io/factorio-pack-data";
 
 export const packs: PackDefinition[] = [
     {
