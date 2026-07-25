@@ -274,33 +274,54 @@ suite watches the plane.
 is proven by FactorioLab, but en-only ships first); moving the `editor/`
 tiers; any fbe website change.
 
-## Slice 2 — FBE transitions to the data repo (later)
+## Slice 2 — the dedicated data repo (in progress)
 
-More work and coordination — separate effort, tracked in fbe #8/#29 and a
-future fbe-side doc when it starts. Sketch, so slice 1 doesn't paint it into
-a corner:
+The repo: **`trisiak/factorio-pack-data`** — pipeline + Pages, not a binary
+dump. Design settled 2026-07-25:
 
-- **The dedicated data repo is created here** (own Pages deploy; flat
-  history — squash/orphan on regeneration, pack dumps don't need history).
-  Both tiers move to it; this app's `packs.ts` base URLs swap over (a
-  config-only change — combination ids untouched); fbe keeps the old
-  `data/` URLs serving until this app has redeployed.
-- fbe's website consumes the data repo via the already-proven `VITE_DATA_URL`
-  seam (`__DATA_URL__` → `DATA_ROOT` in `editor/src/common/globals.ts`); the
-  dev flow (exporter serving `:8081`) keeps working.
-- `data/output/` leaves the fbe repo (becomes gitignored exporter working
-  space); the Pages deploy stops baking ~434 MB into `dist/`; e2e strategy
-  needs deciding (pin a data-repo snapshot vs. live fetch).
-- **Editor-artifact slimming lands here:** lower sprite resolutions and
-  **strip animation frames** the editor never draws (it renders frame 0;
-  idle-animation work is paused in fbe #29 precisely pending this hosting
-  model). Both shrink the hosted tier substantially and improve the fair-use
-  posture — the public default becomes a reduced-fidelity asset set, with
-  full-quality packs as a bring-your-own/local-exporter option. That is the
-  fbe #29 unpause path.
+- **Textures are never committed.** The repo versions only the small,
+  diffable tiers — `packs/packs.json` (the manifest of record, moving pack
+  configuration out of both apps) and each pack's `data.json` + `browser/`.
+  The `.basis` atlases are build products: the deploy workflow sources them
+  per pack from (1) the Actions cache, (2) a bootstrap sparse-checkout of
+  fbe's committed copy (transition path), or (3) full exporter regeneration
+  (`workflow_dispatch`, `FACTORIO_USERNAME`/`FACTORIO_TOKEN` as repo
+  secrets), then publishes JSON + textures together to Pages. Regeneration
+  re-derives the JSON tiers and fails the deploy on drift vs. the committed
+  ones (fresh JSON offered as an artifact to commit), so the site can never
+  mix mismatched JSON and textures.
+- **Why:** git history stays small forever (no orphan-branch gymnastics);
+  the clonable repo never distributes game-derived textures (they're built
+  at deploy time with the owner's credentials — a materially better
+  licensing posture, and #29's resolution/frame-stripping later becomes a
+  build flag, not repo churn); pack configuration lives outside both apps;
+  and the most privileged credential is isolated to this one repo's secrets.
+- **Staged migration, no flag day.** fbe keeps its committed `data/output/`
+  and its own deploy for now (the bootstrap path reads it). Later, in any
+  order: this app's `packs.ts` base URLs swap to the new host (config-only;
+  combination ids untouched); fbe consumes via `VITE_DATA_URL`; fbe evicts
+  `data/output/` (closing fbe #8) — at which point the bootstrap path is
+  deleted and cache+regen carry the textures.
+- **Editor-artifact slimming still lands in this slice's follow-up:** lower
+  sprite resolutions and strip animation frames the editor never draws
+  (renders frame 0; fbe #29 is paused precisely pending this hosting model)
+  — as exporter build flags producing variants.
 - fbe's blueprint-library panel (fbe #50 phase 5c) can render DOM icons from
-  the `browser/` tier at any point after slice 1 — it doesn't need to wait
-  for the editor-tier move.
+  the `browser/` tier at any point — independent of the migration.
+
+Status:
+- [x] Design (above) + seed tree prepared: `packs/` (manifest + 3 packs'
+  JSON/browser tiers, ~33 MB), README (licensing stance, update flow),
+  `deploy.yml` (texture sourcing cascade, drift check, Pages publish with
+  `enablement: true`).
+- [ ] Repo created (needs the owner — the integration token can't create
+  repos), seed pushed, first deploy verified end-to-end.
+- [ ] Secrets set (`FACTORIO_USERNAME`/`FACTORIO_TOKEN`) + one dispatch
+  regeneration exercised (validates the CI regen path + drift check).
+- [ ] Consumers repoint (this app's base URLs; fbe `VITE_DATA_URL`), then
+  fbe evicts `data/output/` and #8 closes; bootstrap path deleted.
+- [ ] Slimming flags (resolution / animation-frame stripping) → fbe #29
+  unpause.
 
 ## Open questions
 
