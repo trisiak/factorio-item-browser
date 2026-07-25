@@ -320,10 +320,22 @@ Status:
   `https://trisiak.github.io/factorio-pack-data/`. Two owner-only steps were
   needed (repo creation, first Pages enablement — both admin-gated beyond
   the workflow token).
-- [ ] Secrets set (`FACTORIO_USERNAME`/`FACTORIO_TOKEN`) + one dispatch
-  regeneration exercised (validates the CI regen path + drift check).
-- [ ] Consumers repoint (this app's base URLs; fbe `VITE_DATA_URL`), then
-  fbe evicts `data/output/` and #8 closes; bootstrap path deleted.
+- [x] Secrets set + a dispatch regeneration exercised (vanilla, 15 min in
+  CI): full credentialed pipeline green, JSON drift check passed. Both
+  credentials are repo secrets and auto-masked; the drift check is
+  JSON-aware (ignores the `generated` timestamp; icon-sheet bytes warn
+  only, since the committed sheet+rects pair is what gets served).
+- [x] Consumers repointed and fbe evicted (2026-07-25). This app: base-URL
+  swap merged (#19), e2e canary green against the new host. fbe: PR #82
+  merged — production/previews/e2e consume the data plane via
+  `VITE_DATA_URL`, `dist` dropped 440 MB → 7.4 MB, and
+  `data/output/` left the tree (9,608 files / 429 MB; now gitignored
+  exporter working space) — **fbe #8 closed**. Five fbe vitest suites that
+  read pack data now self-skip when the files are absent while CI fetches
+  the JSON tiers so the #28 ratchets keep running. The data repo's
+  bootstrap was NOT deleted: it is pinned to fbe's last pre-eviction SHA
+  (history keeps the blobs), a permanent no-credentials rebuild path
+  alongside cache + regeneration.
 - [ ] Slimming flags (resolution / animation-frame stripping) → fbe #29
   unpause.
 
