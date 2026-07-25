@@ -25,7 +25,7 @@ const SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000003";
 // The fbe-sourced Space Exploration pack — the same mod on Factorio 2.0 (SE 0.7.56).
 const FBE_SXP_FULL_ID = "fab1a000-0000-4000-8000-000000000013";
 // The spritesheets our own artifacts publish, which the generated icon CSS must reference.
-const FBE_DATA_ROOT = "https://trisiak.github.io/factorio-blueprint-editor/data";
+const FBE_DATA_ROOT = "https://trisiak.github.io/factorio-pack-data";
 const FBE_VANILLA_SHEET = `${FBE_DATA_ROOT}/vanilla-2.0/browser/icons.webp`;
 const FBE_SXP_SHEET = `${FBE_DATA_ROOT}/space-exploration/browser/icons.webp`;
 // The two Space Age entries in the settings picker. Their labels differ only by the source
