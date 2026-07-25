@@ -314,8 +314,12 @@ Status:
   JSON/browser tiers, ~33 MB), README (licensing stance, update flow),
   `deploy.yml` (texture sourcing cascade, drift check, Pages publish with
   `enablement: true`).
-- [ ] Repo created (needs the owner — the integration token can't create
-  repos), seed pushed, first deploy verified end-to-end.
+- [x] Repo created, seed pushed, first deploy verified end-to-end
+  (2026-07-25): the bootstrap path pulled all three packs' textures from
+  fbe, cached them, and Pages serves the full site (452 MB, 9,608 files) at
+  `https://trisiak.github.io/factorio-pack-data/`. Two owner-only steps were
+  needed (repo creation, first Pages enablement — both admin-gated beyond
+  the workflow token).
 - [ ] Secrets set (`FACTORIO_USERNAME`/`FACTORIO_TOKEN`) + one dispatch
   regeneration exercised (validates the CI regen path + drift check).
 - [ ] Consumers repoint (this app's base URLs; fbe `VITE_DATA_URL`), then
