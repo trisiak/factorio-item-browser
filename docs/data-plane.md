@@ -302,10 +302,10 @@ dump. Design settled 2026-07-25:
   combination ids untouched); fbe consumes via `VITE_DATA_URL`; fbe evicts
   `data/output/` (closing fbe #8) — at which point the bootstrap path is
   deleted and cache+regen carry the textures.
-- **Editor-artifact slimming still lands in this slice's follow-up:** lower
-  sprite resolutions and strip animation frames the editor never draws
-  (renders frame 0; fbe #29 is paused precisely pending this hosting model)
-  — as exporter build flags producing variants.
+- **Editor-artifact slimming landed as this slice's follow-up** (see the
+  Status box below): lower sprite resolutions and stripped animation frames
+  the editor never draws (renders frame 0; fbe #29 was paused precisely
+  pending this hosting model) — as exporter build flags producing variants.
 - fbe's blueprint-library panel (fbe #50 phase 5c) can render DOM icons from
   the `browser/` tier at any point — independent of the migration.
 
@@ -336,8 +336,19 @@ Status:
   bootstrap was NOT deleted: it is pinned to fbe's last pre-eviction SHA
   (history keeps the blobs), a permanent no-credentials rebuild path
   alongside cache + regeneration.
-- [ ] Slimming flags (resolution / animation-frame stripping) → fbe #29
-  unpause.
+- [x] Slimming flags (2026-07-26): fbe's `--slim` exporter mode + a census
+  rect report build **graphics-only variant packs** (`variantOf` in the
+  manifest; same `data.json`, cropped/downscaled textures + a
+  `textures.json` sidecar applied at fbe's `getTexture` seam — user state
+  keys on the canonical id, so switching variants swaps textures and
+  nothing else). `vanilla-2.0-slim` (18 MB vs 63) and
+  `space-exploration-slim` (52 MB vs 220) are live on the data plane,
+  built in CI from committed sidecars. Treatment sealed after four
+  visual-QA rounds as a footprint tier ladder (icons full quality; small
+  buildings 0.5×/q64; mid 0.5×/q32; giants 0.25×/q64). FIB is unaffected
+  (variants carry no `browser/` tier). Design record: fbe
+  `docs/slim-graphics.md`; fbe #29's end-state decision (what the public
+  default becomes) stays open there.
 
 ## Open questions
 
