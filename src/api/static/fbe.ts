@@ -123,7 +123,15 @@ function toAmount(amount: number | undefined): number {
 }
 
 function mapRecipeItems(side: FbeRecipeItem[] | undefined): PackRecipeItem[] {
-    return (side || []).map((entry) => ({ id: entry.id, amount: toAmount(entry.amount) }));
+    // Probabilistic results fold their probability into the amount as an
+    // expected value — the same convention FactorioLab's packs use, and what
+    // `formatAmount` renders as a percentage when it lands below 1 (e.g. SE's
+    // holmium chloride: amount 1 × probability 0.25 → "25%"). Ingredients never
+    // carry a probability, so this is a no-op for them.
+    return (side || []).map((entry) => ({
+        id: entry.id,
+        amount: toAmount(entry.amount) * (entry.probability ?? 1),
+    }));
 }
 
 function isObject(value: unknown): boolean {
