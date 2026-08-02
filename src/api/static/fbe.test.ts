@@ -204,6 +204,11 @@ describe("fbe pack adapter", (): void => {
             { type: "fluid", name: "goo", label: "Goo", amount: 2.5 },
         ]);
         expect(details.recipe?.products).toEqual([{ type: "item", name: "gizmo", label: "Gizmo", amount: 1 }]);
+
+        // Probabilistic results fold the probability into the amount (expected
+        // value, FactorioLab's convention) — formatAmount renders <1 as "50%".
+        const casting = await api.getRecipeDetails("widget-casting");
+        expect(casting.recipe?.products).toEqual([{ type: "item", name: "widget", label: "Widget", amount: 0.5 }]);
     });
 
     test("populates the descriptions the artifact carries, and empties the ones it omits", async (): Promise<void> => {
